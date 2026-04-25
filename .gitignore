@@ -1,14 +1,6 @@
-# Python Standard
-__pycache__/
-*.py[cod]
 venv/
+db.sqlite3
+*.pyc
+__pycache__/
 .env
-
-# Data
-*.csv
-*.xlsx
-*.log
-
-# OS
-.DS_Store
-Thumbs.db
+.pytest_cache/

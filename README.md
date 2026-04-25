@@ -1,17 +1,19 @@
-# [Project Name]
+# SuperPersonal
 
-**Description**: Brief description of what this tool does.
+Client-server automation system bridging Django web dashboard to Windows hardware.
 
-## Setup
-1. Run `setup_env.bat` to initialize the environment.
-2. Edit `config/settings.json` (if applicable).
+## Project Overview
+Automate Windows tasks (audio, keyboard, mouse) remotely through a Django-based web interface.
 
-## Usage
-```bash
-python app.py
-```
+## Tech Stack
+- Django 6.0
+- Channels (WebSockets)
+- Celery
+- PyAutoGUI / PyCaw
+- SQLite (testing)
 
-## Structure
-- `src/`: Source code.
-- `tests/`: Unit tests.
-- `docs/`: Documentation.
+## Development
+1. Setup virtualenv: `python3 -m venv venv`
+2. Install deps: `pip install -r requirements.txt`
+3. Run migrations: `python manage.py migrate`
+4. Tests: `pytest`
