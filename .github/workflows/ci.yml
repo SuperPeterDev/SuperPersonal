@@ -13,7 +13,7 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run tests
         env:
-          DJANGO_SETTINGS_MODULE: src.server.super_personal.settings
+          DJANGO_SETTINGS_MODULE: super_personal.settings
           DISPLAY: :99
         run: |
           /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1080x24 -ac +extension GLX
