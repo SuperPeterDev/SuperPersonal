@@ -55,8 +55,16 @@ class ClientApp:
             logger.warning(f"Unknown command: {command_type}")
 
     def poll_commands(self):
-        for cmd in self.api.get_pending_commands():
-            self.execute_command({"command_type": cmd.command_type, "payload": getattr(cmd, "payload", {})})
+        import requests as _req
+        if not self.device_id:
+            return
+        try:
+            resp = _req.get(f"{SERVER_URL}/commands/pending/", params={"device_id": self.device_id})
+            if resp.status_code == 200:
+                for cmd in resp.json():
+                    self.execute_command(cmd)
+        except Exception as e:
+            logger.error(f"Polling error: {e}")
 
 
     def handle_command(self, cmd: Command):
