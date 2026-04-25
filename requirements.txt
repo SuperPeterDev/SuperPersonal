@@ -13,7 +13,7 @@ requests-mock
 pycaw
 comtypes
 psutil
-pyautogui
+pyautogui; sys_platform == 'win32'
 dj-database-url
 python-dotenv
 psycopg2-binary
