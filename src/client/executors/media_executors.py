@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 @ExecutorRegistry.register(CommandType.CMD_SET_VOLUME)
 class VolumeExecutor(CommandExecutor):
+    def is_available(self) -> bool:
+        return AUDIO_AVAILABLE or PYGUI_AVAILABLE
+
     def execute(self, payload: CommandPayload) -> CommandResult:
         level = payload.level
         mute = payload.mute
@@ -67,6 +70,9 @@ class VolumeExecutor(CommandExecutor):
 
 @ExecutorRegistry.register(CommandType.CMD_MEDIA)
 class MediaExecutor(CommandExecutor):
+    def is_available(self) -> bool:
+        return PYGUI_AVAILABLE
+
     def execute(self, payload: CommandPayload) -> CommandResult:
         if not PYGUI_AVAILABLE:
             return CommandResult(status=CommandStatus.FAILED, output="PyAutoGUI not installed")
