@@ -1,0 +1,14 @@
+# Python Standard
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Data
+*.csv
+*.xlsx
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
