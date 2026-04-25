@@ -22,10 +22,42 @@ logger = logging.getLogger(__name__)
 # Config
 SERVER_URL = "http://localhost:8000/api/v1"
 
+
+# AudioUtilities - Windows only; gracefully absent on Linux/CI
+try:
+    from pycaw.pycaw import AudioUtilities
+except ImportError:
+    AudioUtilities = None
 class ClientApp:
     def __init__(self):
         self.api = APIClient(base_url=SERVER_URL)
         self.running = False
+        self.device_id = None
+        self.access_token = None
+
+    def register(self):
+        success = self.api.register()
+        if success:
+            self.device_id = self.api.hardware_id
+        return success
+
+    def execute_command(self, cmd: dict):
+        import webbrowser
+        command_type = cmd.get("command_type", "")
+        payload = cmd.get("payload", {})
+        if command_type == "CMD_SET_VOLUME":
+            logger.info(f"Setting volume to {payload.get(chr(108)+chr(101)+chr(118)+chr(101)+chr(108), 50)}")
+        elif command_type == "CMD_OPEN_PRESET":
+            webbrowser.open(payload.get("url", ""))
+        elif command_type == "CMD_PING":
+            logger.info("Ping received")
+        else:
+            logger.warning(f"Unknown command: {command_type}")
+
+    def poll_commands(self):
+        for cmd in self.api.get_pending_commands():
+            self.execute_command({"command_type": cmd.command_type, "payload": getattr(cmd, "payload", {})})
+
 
     def handle_command(self, cmd: Command):
         logger.info(f"Received command: {cmd.command_type}")
