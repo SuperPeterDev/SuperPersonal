@@ -14,9 +14,4 @@ jobs:
       - name: Run tests
         env:
           DJANGO_SETTINGS_MODULE: super_personal.settings
-          DISPLAY: :99
-        run: |
-          touch /home/runner/.Xauthority
-          /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1920x1080x24 -ac +extension GLX
-          sleep 1
-          pytest
+        run: pytest
