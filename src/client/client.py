@@ -79,3 +79,6 @@ class ClientApp:
 if __name__ == "__main__":
     app = ClientApp()
     app.run()
+
+# Alias for backward compatibility
+Client = ClientApp
