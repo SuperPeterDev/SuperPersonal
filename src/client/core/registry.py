@@ -17,4 +17,9 @@ class ExecutorRegistry:
         executor_cls = cls._executors.get(command_type)
         if not executor_cls:
             raise ValueError(f"No executor registered for {command_type}")
-        return executor_cls()
+        instance = executor_cls()
+        if not instance.is_available():
+            raise EnvironmentError(
+                f"Executor for {command_type} is not available on this platform"
+            )
+        return instance
