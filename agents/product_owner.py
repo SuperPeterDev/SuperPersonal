@@ -105,7 +105,11 @@ def validate_acceptance_criteria(story_id: str) -> CriteriaValidationResult:
             if phrase.lower() in text.lower():
                 issues.append(f"{ac_id}: Vague phrase detected — '{phrase}'")
 
-        if re.search(r"<[^>]+>|\{[^}]+\}", text):
+        # Placeholder pattern: angle-brackets or curly-braces containing only
+        # word characters (e.g. <value>, {placeholder_name}). Excludes concrete
+        # data payloads like {seconds: 3600} or {level: 50, mute: false} which
+        # contain colons or digits alongside field names.
+        if re.search(r"<[^>]+>|\{[a-zA-Z_]+\}", text):
             issues.append(f"{ac_id}: Placeholder detected — replace with concrete values")
 
     is_valid = len(issues) == 0

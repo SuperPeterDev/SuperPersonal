@@ -21,6 +21,8 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CONFIG = json.loads((_ROOT / "config" / "playbook.json").read_text())
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 
 # ---------------------------------------------------------------------------
@@ -93,7 +95,10 @@ def check_language_compliance(diff_text: str) -> list[ReviewFeedbackItem]:
     G-06: All class names, method names, and module-level identifiers in the diff
     must exist in the Ubiquitous Language Glossary.
     """
-    from .domain_expert import load_glossary, get_all_terms
+    try:
+        from .domain_expert import load_glossary, get_all_terms
+    except ImportError:
+        from agents.domain_expert import load_glossary, get_all_terms
 
     glossary = load_glossary()
     known_terms = get_all_terms(glossary)
@@ -149,7 +154,10 @@ def check_language_compliance(diff_text: str) -> list[ReviewFeedbackItem]:
 # ---------------------------------------------------------------------------
 
 def check_layer_separation(diff_text: str) -> list[ReviewFeedbackItem]:
-    from .architect import check_layer_violations
+    try:
+        from .architect import check_layer_violations
+    except ImportError:
+        from agents.architect import check_layer_violations
 
     result = check_layer_violations(diff_text)
     return [
@@ -205,7 +213,10 @@ def check_refactor_purity(story_id: str, branch: str) -> list[ReviewFeedbackItem
 # ---------------------------------------------------------------------------
 
 def check_coverage_floor() -> list[ReviewFeedbackItem]:
-    from .qa import run_coverage
+    try:
+        from .qa import run_coverage
+    except ImportError:
+        from agents.qa import run_coverage
 
     result = run_coverage()
     if not result.above_floor:

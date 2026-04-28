@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
+# Allow both `python agents/qa.py` (script) and `import agents.qa` (module)
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 _CONFIG = json.loads((_ROOT / "config" / "playbook.json").read_text())
 _COVERAGE_FLOOR = _CONFIG["coverage"]["COVERAGE_FLOOR_PERCENT"]
 _INTEGRATION_DIR = _ROOT / _CONFIG["paths"]["tests_integration"]
@@ -98,7 +101,10 @@ def build_qa_checklist(story_id: str) -> QAChecklist:
     Build a QA checklist from the story's acceptance criteria.
     Returns edge cases, integration scenarios, and invariants to test.
     """
-    from .product_owner import get_story
+    try:
+        from .product_owner import get_story
+    except ImportError:
+        from agents.product_owner import get_story
 
     story = get_story(story_id)
     criteria_text = "\n".join(

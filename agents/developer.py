@@ -25,6 +25,8 @@ from typing import Any
 
 _ROOT = Path(__file__).resolve().parent.parent
 _CONFIG = json.loads((_ROOT / "config" / "playbook.json").read_text())
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 
 # ---------------------------------------------------------------------------
@@ -152,8 +154,12 @@ def red_phase_checklist(story_id: str) -> dict[str, Any]:
     Pre-flight checklist before writing the Red test.
     Returns a dict the Developer must verify before writing any code.
     """
-    from .product_owner import get_story, validate_acceptance_criteria
-    from .domain_expert import load_glossary
+    try:
+        from .product_owner import get_story, validate_acceptance_criteria
+        from .domain_expert import load_glossary
+    except ImportError:
+        from agents.product_owner import get_story, validate_acceptance_criteria
+        from agents.domain_expert import load_glossary
 
     story = get_story(story_id)
     criteria_result = validate_acceptance_criteria(story_id)
