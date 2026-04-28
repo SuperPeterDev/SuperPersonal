@@ -1,0 +1,186 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "last_updated": "2026-04-27",
+    "owner": "Domain Expert Agent",
+    "description": "Ubiquitous Language Glossary for SuperPersonal — the canonical authority for all identifiers used in production code."
+  },
+  "terms": [
+    {
+      "term": "Device",
+      "definition": "A registered personal computer (the target PC) that the user controls remotely. Identified by a stable HardwareID generated on the client machine. The aggregate root for all commands issued to that machine.",
+      "synonyms": ["PC", "Target PC", "Client Machine", "Agent Host"],
+      "not_to_be_confused_with": ["Client (the Python process running on the Device)"],
+      "bounded_context": "DeviceManagement",
+      "type": "Aggregate",
+      "examples": ["Gaming PC registered with hardware_id=abc-123", "Work Laptop that was last seen 5 minutes ago"],
+      "added_in_story": "US-1",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "HardwareID",
+      "definition": "A UUID generated once on first client startup and persisted locally on the target PC. Immutable after generation. Used to re-identify the same physical machine across restarts and IP changes.",
+      "synonyms": ["hardware_id", "Device UUID"],
+      "not_to_be_confused_with": ["DeviceID (the server-side database primary key assigned at registration)"],
+      "bounded_context": "DeviceManagement",
+      "type": "Value Object",
+      "examples": ["'3f6a9b2c-1234-4abc-8def-000000000001'"],
+      "added_in_story": "US-1",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "DeviceID",
+      "definition": "The server-assigned UUID primary key (pk_device_id) for a Device record in the database. Assigned at registration and never changes.",
+      "synonyms": ["pk_device_id"],
+      "not_to_be_confused_with": ["HardwareID (client-generated)"],
+      "bounded_context": "DeviceManagement",
+      "type": "Value Object",
+      "examples": ["UUID assigned by Django ORM on first POST /devices/register"],
+      "added_in_story": "US-1",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "Command",
+      "definition": "A discrete instruction issued by the user via the web dashboard to be executed on a specific Device. Has a lifecycle: PENDING → SENT → QUEUED → RUNNING → SUCCESS | FAILED | CANCELLED. The aggregate root for the command execution lifecycle.",
+      "synonyms": ["task", "instruction"],
+      "not_to_be_confused_with": ["CommandType (the classification of what a command does)", "CommandExecutor (the client-side object that runs a command)"],
+      "bounded_context": "CommandDispatch",
+      "type": "Aggregate",
+      "examples": ["A CMD_SET_VOLUME command with payload {level: 50} dispatched to the Gaming PC"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandType",
+      "definition": "An enumerated classification of a Command that determines which CommandExecutor handles it on the client. Values: CMD_PING, CMD_SHELL_EXEC, CMD_OPEN_BROWSER, CMD_SCREENSHOT, CMD_SYSTEM_INFO, CMD_LOCK_PC, CMD_SHUTDOWN, CMD_RESTART, CMD_SCHEDULED_SHUTDOWN, CMD_SET_VOLUME, CMD_OPEN_PRESET, CMD_MEDIA.",
+      "synonyms": ["command_type", "command kind"],
+      "not_to_be_confused_with": ["CommandStatus"],
+      "bounded_context": "CommandDispatch",
+      "type": "Value Object",
+      "examples": ["CMD_SCHEDULED_SHUTDOWN", "CMD_SET_VOLUME"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandStatus",
+      "definition": "The current lifecycle state of a Command. Valid transitions: PENDING → SENT; SENT → QUEUED; QUEUED → RUNNING; RUNNING → SUCCESS | FAILED; any active state → CANCELLED. Invalid transitions must be rejected by the Command aggregate.",
+      "synonyms": ["status", "command_status"],
+      "not_to_be_confused_with": ["CommandType"],
+      "bounded_context": "CommandDispatch",
+      "type": "Value Object",
+      "examples": ["PENDING (just issued)", "RUNNING (client actively executing)", "FAILED (execution error returned)"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandPayload",
+      "definition": "An immutable Value Object carrying the typed parameters for a Command. Fields are command-type-specific: url (CMD_OPEN_BROWSER), seconds (CMD_SCHEDULED_SHUTDOWN), level/mute (CMD_SET_VOLUME). Unknown fields are stored in extra{}.",
+      "synonyms": ["payload", "command_payload"],
+      "not_to_be_confused_with": ["CommandResult"],
+      "bounded_context": "CommandDispatch",
+      "type": "Value Object",
+      "examples": ["CommandPayload(seconds=3600) for a scheduled shutdown", "CommandPayload(level=50, mute=False) for volume control"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandResult",
+      "definition": "An immutable Value Object produced by a CommandExecutor after execution. Contains the final CommandStatus, stdout output, and any error trace. Sent from Client to Server via POST /commands/{id}/result.",
+      "synonyms": ["result", "execution_result"],
+      "not_to_be_confused_with": ["CommandPayload (input vs output)", "CommandLog (the persisted record on the server)"],
+      "bounded_context": "CommandExecution",
+      "type": "Value Object",
+      "examples": ["CommandResult(status=SUCCESS, output='Volume set to 50')", "CommandResult(status=FAILED, error_trace='Access denied')"],
+      "added_in_story": "US-5",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandLog",
+      "definition": "The persistent server-side record of a Command's execution output. Created when the Client posts a result. Contains stdout output and error trace. One-to-one with Command.",
+      "synonyms": ["Tbl_CommandLog", "execution_log", "log"],
+      "not_to_be_confused_with": ["CommandResult (transient Value Object on the wire)", "Agent Communication Log (process audit log)"],
+      "bounded_context": "CommandDispatch",
+      "type": "Entity",
+      "examples": ["CommandLog for CMD_SCREENSHOT with output='base64_image_data'"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandExecutor",
+      "definition": "A client-side Domain Service (abstract base class) that encapsulates the OS-level logic for a specific CommandType. Each CommandType has exactly one registered CommandExecutor subclass. Stateless: no mutable instance fields after construction.",
+      "synonyms": ["executor"],
+      "not_to_be_confused_with": ["ExecutorRegistry (the factory/registry that selects the right executor)", "CommandDispatch (the server-side bounded context)"],
+      "bounded_context": "CommandExecution",
+      "type": "Domain Service",
+      "examples": ["ShutdownExecutor handles CMD_SHUTDOWN", "VolumeExecutor handles CMD_SET_VOLUME"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "ExecutorRegistry",
+      "definition": "A Domain Service (registry/factory) on the client that maps CommandType to a concrete CommandExecutor. The sole point where CommandExecutor instances are selected. Uses the @register decorator pattern.",
+      "synonyms": ["registry", "executor_registry"],
+      "not_to_be_confused_with": ["CommandExecutor (individual handler)"],
+      "bounded_context": "CommandExecution",
+      "type": "Domain Service",
+      "examples": ["ExecutorRegistry.get_executor(CommandType.CMD_SET_VOLUME) returns VolumeExecutor instance"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "Preset",
+      "definition": "A user-saved shortcut pairing a name with a URL (e.g., a YouTube playlist). Issuing a CMD_OPEN_PRESET command opens the URL on the target Device. The aggregate root of the Preset Management context.",
+      "synonyms": ["link preset", "bookmark", "Tbl_Preset"],
+      "not_to_be_confused_with": ["Command (the act of opening a preset)", "URL (the raw address stored)"],
+      "bounded_context": "PresetManagement",
+      "type": "Aggregate",
+      "examples": ["Preset(name='LoFi Playlist', url='https://youtube.com/...')"],
+      "added_in_story": "US-6",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "ScheduledShutdown",
+      "definition": "A domain concept representing a CMD_SCHEDULED_SHUTDOWN Command with a future execution time derived from a seconds-delay payload. The system must enforce that the delay is a positive integer.",
+      "synonyms": ["scheduled_shutdown", "timed_shutdown"],
+      "not_to_be_confused_with": ["CMD_SHUTDOWN (immediate)", "CommandType.CMD_SCHEDULED_SHUTDOWN (the enum value)"],
+      "bounded_context": "CommandDispatch",
+      "type": "Concept",
+      "examples": ["ScheduledShutdown with delay=3600 seconds triggers shutdown in 1 hour"],
+      "added_in_story": "US-3",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "SystemMetrics",
+      "definition": "A Value Object representing a point-in-time snapshot of a Device's hardware utilisation: CPU usage (%), RAM usage (%), and optionally disk/network. Produced by CMD_SYSTEM_INFO execution.",
+      "synonyms": ["system_info", "metrics", "hardware_stats"],
+      "not_to_be_confused_with": ["CommandLog (execution record)", "DeviceStatus (online/offline flag)"],
+      "bounded_context": "Monitoring",
+      "type": "Value Object",
+      "examples": ["SystemMetrics(cpu_percent=45.2, ram_percent=91.0)"],
+      "added_in_story": "US-7",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "DeviceStatus",
+      "definition": "A derived Value Object representing whether a Device is currently reachable: ONLINE if last_seen within the heartbeat threshold (default 60 seconds), OFFLINE otherwise.",
+      "synonyms": ["online_status", "connectivity_status"],
+      "not_to_be_confused_with": ["CommandStatus", "SystemMetrics"],
+      "bounded_context": "DeviceManagement",
+      "type": "Value Object",
+      "examples": ["DeviceStatus.ONLINE when last_seen=30s ago", "DeviceStatus.OFFLINE when last_seen=5m ago"],
+      "added_in_story": "US-1",
+      "last_updated": "2026-04-27"
+    },
+    {
+      "term": "CommandQueue",
+      "definition": "The ordered collection of PENDING Commands for a Device that has not yet acknowledged them. When a Device comes online, it drains its CommandQueue in FIFO order.",
+      "synonyms": ["command_queue", "pending_queue"],
+      "not_to_be_confused_with": ["Celery task queue (infrastructure)", "CommandStatus.QUEUED (a single command's state)"],
+      "bounded_context": "CommandDispatch",
+      "type": "Concept",
+      "examples": ["CommandQueue for 'Gaming PC' with 3 queued commands waiting for the device to reconnect"],
+      "added_in_story": "US-9",
+      "last_updated": "2026-04-27"
+    }
+  ]
+}

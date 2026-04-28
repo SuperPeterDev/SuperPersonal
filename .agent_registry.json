@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "last_updated": "2026-04-27",
+    "description": "Agent Identity Registry for SuperPersonal multi-agent system. Managed by the Orchestrator. All agents must be registered here before participating in any story."
+  },
+  "agents": [
+    {
+      "agentId": "orchestrator-001",
+      "role": "Orchestrator",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "story.dispatched",
+        "domain.modelled",
+        "story.criteria_ready",
+        "story.ready_for_dev",
+        "test.red.committed",
+        "test.red.confirmed",
+        "test.red.rejected",
+        "test.green.committed",
+        "test.green.confirmed",
+        "refactor.committed",
+        "qa.completed",
+        "domain.reconciled",
+        "review.requested",
+        "review.approved",
+        "review.rejected",
+        "story.done",
+        "escalation.human"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "domain-expert-001",
+      "role": "Domain Expert",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "domain.modelled",
+        "domain.reconciled"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "product-owner-001",
+      "role": "Product Owner",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "story.criteria_ready"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "architect-001",
+      "role": "Architect",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "domain.modelled",
+        "story.ready_for_dev"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "developer-001",
+      "role": "Test-First Developer",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "test.red.committed",
+        "test.green.committed",
+        "refactor.committed"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "qa-001",
+      "role": "Tester / QA",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "qa.completed"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    },
+    {
+      "agentId": "reviewer-001",
+      "role": "Code Reviewer",
+      "version": "claude-sonnet-4-6",
+      "capabilities": [
+        "review.approved",
+        "review.rejected"
+      ],
+      "registeredAt": "2026-04-27",
+      "status": "ACTIVE"
+    }
+  ]
+}

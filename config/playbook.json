@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "version": "2.0",
+    "description": "Process configuration for the Multi-Agent TDD+DDD playbook. All agents read from this file at startup. Do not edit during an active sprint without Orchestrator approval.",
+    "last_updated": "2026-04-27"
+  },
+  "loop_limits": {
+    "MAX_RED_GREEN_LOOPS": 3,
+    "MAX_REVIEW_CYCLES": 2,
+    "description": "When a story reaches these limits, the Orchestrator fires escalation.human."
+  },
+  "coverage": {
+    "COVERAGE_FLOOR_PERCENT": 80,
+    "scope": "tests/unit/domain/",
+    "command": "pytest --cov=src --cov-report=json --cov-fail-under=80"
+  },
+  "phases": {
+    "DOMAIN_RECONCILIATION_REQUIRED": true,
+    "REFACTOR_REQUIRED": true
+  },
+  "timeouts_minutes": {
+    "agent_response": 30,
+    "test_runner": 10,
+    "code_review_response": 60
+  },
+  "retry": {
+    "max_attempts": 3,
+    "backoff_minutes": [1, 2, 4]
+  },
+  "git": {
+    "protected_branch": "main",
+    "feature_branch_prefix": "feature/",
+    "commit_tags": {
+      "red": "test: [RED]",
+      "green": "feat: [GREEN]",
+      "refactor": "refactor: [REFACTOR]",
+      "qa": "test: [QA]"
+    }
+  },
+  "paths": {
+    "glossary": "docs/glossary.json",
+    "domain_model": "docs/domain_model.yaml",
+    "backlog": "docs/backlog.json",
+    "adr_dir": "docs/adr/",
+    "retrospectives_dir": "docs/retrospectives/",
+    "agent_log_dir": "logs/agent/",
+    "agent_registry": ".agent_registry.json",
+    "tests_unit_domain": "tests/unit/domain/",
+    "tests_integration": "tests/integration/",
+    "tests_property": "tests/property/"
+  },
+  "metrics": {
+    "cycle_time_alert_hours": 24,
+    "review_rejection_rate_alert": 0.4,
+    "language_violation_rate_alert": 0.1,
+    "regression_rate_alert": 0.05,
+    "escalation_rate_alert": 0.15
+  },
+  "agents": {
+    "heartbeat_interval_seconds": 60,
+    "log_format": "jsonlines"
+  }
+}

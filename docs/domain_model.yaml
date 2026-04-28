@@ -1,0 +1,177 @@
+_meta:
+  version: "1.0"
+  last_updated: "2026-04-27"
+  owner: "Domain Expert Agent + Architect Agent"
+  description: >
+    Domain Model Canvas for SuperPersonal. Each bounded context is defined with its
+    aggregates, entities, value objects, domain events, commands, and integration points.
+    This document is the authoritative source for DDD structural decisions.
+
+bounded_contexts:
+
+  - name: "DeviceManagement"
+    description: >
+      Responsible for the registration, identification, and online/offline status of Devices.
+      A Device is a personal computer controlled remotely via the system.
+    aggregates:
+      - name: "Device"
+        root_entity: "Device"
+        entities: []
+        value_objects:
+          - "HardwareID"
+          - "DeviceID"
+          - "DeviceStatus"
+          - "OSConfig"
+        domain_events:
+          - "DeviceRegistered"
+          - "DeviceReconnected"
+          - "DeviceWentOffline"
+        commands:
+          - "RegisterDevice"
+          - "UpdateDeviceLastSeen"
+          - "DeactivateDevice"
+        invariants:
+          - "HardwareID must be unique across all Devices"
+          - "A Device's last_seen timestamp must only advance forward in time"
+          - "DeviceStatus is ONLINE iff last_seen < 60 seconds ago"
+    repositories:
+      - "DeviceRepository"
+    domain_services: []
+    integration_points:
+      - target_context: "CommandDispatch"
+        pattern: "Published Language"
+        description: "DeviceRegistered event carries DeviceID consumed by CommandDispatch to authorise command dispatch"
+
+  - name: "CommandDispatch"
+    description: >
+      Manages the full lifecycle of a Command from user issuance through to completion.
+      Owns the command queue for offline devices and enforces valid status transitions.
+    aggregates:
+      - name: "Command"
+        root_entity: "Command"
+        entities:
+          - "CommandLog"
+        value_objects:
+          - "CommandType"
+          - "CommandStatus"
+          - "CommandPayload"
+        domain_events:
+          - "CommandIssued"
+          - "CommandDispatched"
+          - "CommandAcknowledged"
+          - "CommandCompleted"
+          - "CommandFailed"
+          - "CommandCancelled"
+        commands:
+          - "IssueCommand"
+          - "AcknowledgeCommand"
+          - "CompleteCommand"
+          - "CancelCommand"
+        invariants:
+          - "CommandStatus transitions must follow: PENDING→SENT→QUEUED→RUNNING→(SUCCESS|FAILED|CANCELLED)"
+          - "FAILED and SUCCESS are terminal states — no further transitions permitted"
+          - "CMD_SHUTDOWN and CMD_RESTART require explicit user confirmation (protected commands)"
+          - "CMD_SCHEDULED_SHUTDOWN payload.seconds must be a positive integer"
+          - "CMD_SET_VOLUME payload.level must be in range 0–100"
+    repositories:
+      - "CommandRepository"
+    domain_services:
+      - "CommandQueueService"
+    integration_points:
+      - target_context: "DeviceManagement"
+        pattern: "Customer/Supplier"
+        description: "Downstream: CommandDispatch consumes DeviceID from DeviceManagement to validate command targets"
+      - target_context: "CommandExecution"
+        pattern: "Published Language"
+        description: "CommandDispatched event published; CommandExecution (client) subscribes via polling or WebSocket"
+      - target_context: "PresetManagement"
+        pattern: "Customer/Supplier"
+        description: "CMD_OPEN_PRESET commands resolve Preset URL from PresetManagement before dispatch"
+
+  - name: "CommandExecution"
+    description: >
+      The client-side bounded context. Receives Commands, routes them to the appropriate
+      CommandExecutor via the ExecutorRegistry, and returns CommandResults to the server.
+      Lives entirely in the Python client process on the target Device.
+    aggregates: []
+    repositories: []
+    domain_services:
+      - "CommandExecutor (abstract)"
+      - "ExecutorRegistry"
+      - "PingExecutor"
+      - "ShellExecExecutor"
+      - "BrowserExecutor"
+      - "ScreenshotExecutor"
+      - "SystemInfoExecutor"
+      - "LockPCExecutor"
+      - "ShutdownExecutor"
+      - "RestartExecutor"
+      - "ScheduledShutdownExecutor"
+      - "VolumeExecutor"
+      - "PresetExecutor"
+      - "MediaExecutor"
+    value_objects:
+      - "CommandPayload (shared kernel with CommandDispatch)"
+      - "CommandResult"
+    domain_events:
+      - "CommandExecutionStarted"
+      - "CommandExecutionCompleted"
+    integration_points:
+      - target_context: "CommandDispatch"
+        pattern: "Anti-Corruption Layer"
+        description: >
+          Client translates server API DTOs (JSON) into domain CommandPayload/Command objects
+          via the shared src/shared/schemas.py schema layer. The ACL protects CommandExecution
+          from direct coupling to Django ORM models.
+
+  - name: "PresetManagement"
+    description: >
+      Manages user-defined URL shortcuts (Presets). A Preset pairs a name with a URL
+      for one-click command dispatch to open that URL on a Device.
+    aggregates:
+      - name: "Preset"
+        root_entity: "Preset"
+        entities: []
+        value_objects:
+          - "PresetID"
+          - "PresetURL"
+          - "PresetName"
+        domain_events:
+          - "PresetCreated"
+          - "PresetDeleted"
+        commands:
+          - "CreatePreset"
+          - "DeletePreset"
+        invariants:
+          - "PresetURL must be a syntactically valid URL"
+          - "PresetName must be non-empty and at most 255 characters"
+    repositories:
+      - "PresetRepository"
+    domain_services: []
+    integration_points:
+      - target_context: "CommandDispatch"
+        pattern: "Customer/Supplier"
+        description: "Upstream: supplies Preset URL when CommandDispatch resolves a CMD_OPEN_PRESET command"
+
+  - name: "Monitoring"
+    description: >
+      Collects and surfaces real-time SystemMetrics (CPU/RAM) from Devices. Provides
+      the data layer for smart suggestions (e.g., 'Close Browser' when RAM > 90%).
+    aggregates: []
+    repositories: []
+    domain_services:
+      - "SystemMetricsCollector"
+      - "SmartSuggestionEngine"
+    value_objects:
+      - "SystemMetrics"
+      - "MetricsThreshold"
+    domain_events:
+      - "MetricsCollected"
+      - "ThresholdExceeded"
+    integration_points:
+      - target_context: "DeviceManagement"
+        pattern: "Customer/Supplier"
+        description: "Consumes DeviceID to scope metrics collection per device"
+      - target_context: "CommandDispatch"
+        pattern: "Published Language"
+        description: "ThresholdExceeded event may trigger an automated IssueCommand in CommandDispatch (smart suggestions)"

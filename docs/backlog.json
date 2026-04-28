@@ -1,0 +1,206 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "last_updated": "2026-04-27",
+    "owner": "Product Owner Agent",
+    "sprint": "sprint-001"
+  },
+  "stories": [
+    {
+      "id": "US-1",
+      "epic": "Device Control",
+      "title": "View all connected devices",
+      "narrative": "As a user, I want to see a list of all my registered devices so that I know which ones are currently online.",
+      "bounded_context": "DeviceManagement",
+      "priority": 1,
+      "status": "DONE",
+      "acceptance_criteria": [
+        {
+          "id": "US-1-AC-1",
+          "gherkin": "Given I am logged into the web dashboard\nWhen I navigate to the Devices page\nThen I see a list of all registered Devices\nAnd each Device entry shows: hostname, HardwareID (truncated), DeviceStatus (ONLINE or OFFLINE), and last_seen timestamp"
+        },
+        {
+          "id": "US-1-AC-2",
+          "gherkin": "Given a Device's last_seen timestamp is less than 60 seconds ago\nWhen the Devices list is rendered\nThen that Device's DeviceStatus is displayed as ONLINE"
+        },
+        {
+          "id": "US-1-AC-3",
+          "gherkin": "Given a Device's last_seen timestamp is 60 seconds or more ago\nWhen the Devices list is rendered\nThen that Device's DeviceStatus is displayed as OFFLINE"
+        }
+      ],
+      "glossary_terms": ["Device", "HardwareID", "DeviceStatus", "DeviceID"]
+    },
+    {
+      "id": "US-2",
+      "epic": "Device Control",
+      "title": "Take a screenshot of a device",
+      "narrative": "As a user, I want to take a screenshot of a specific device so that I can see what is currently on its screen.",
+      "bounded_context": "CommandDispatch",
+      "priority": 4,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-2-AC-1",
+          "gherkin": "Given a Device with DeviceStatus ONLINE is selected on the dashboard\nWhen I click 'Take Screenshot'\nThen a Command of CommandType CMD_SCREENSHOT is created with CommandStatus PENDING\nAnd the Command is associated with the selected Device"
+        },
+        {
+          "id": "US-2-AC-2",
+          "gherkin": "Given a CMD_SCREENSHOT Command has been dispatched to an ONLINE Device\nWhen the Device's client executes the command\nThen a CommandResult with status SUCCESS is returned\nAnd the CommandResult output contains a base64-encoded PNG image"
+        },
+        {
+          "id": "US-2-AC-3",
+          "gherkin": "Given a Device with DeviceStatus OFFLINE is selected\nWhen I click 'Take Screenshot'\nThen a CMD_SCREENSHOT Command is created with status PENDING\nAnd it enters the CommandQueue for that Device"
+        }
+      ],
+      "glossary_terms": ["Command", "CommandType", "CommandStatus", "CommandResult", "CommandQueue", "Device", "DeviceStatus"]
+    },
+    {
+      "id": "US-3",
+      "epic": "Device Control",
+      "title": "Schedule a shutdown in 1 hour",
+      "narrative": "As a user, I want to schedule a shutdown for my PC in 1 hour so that I don't leave it running all night.",
+      "bounded_context": "CommandDispatch",
+      "priority": 2,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-3-AC-1",
+          "gherkin": "Given I am on the Device detail page for 'Gaming PC'\nWhen I select 'Power Options' → 'Schedule Shutdown' and enter 3600 seconds\nThen a Command of CommandType CMD_SCHEDULED_SHUTDOWN is created\nAnd the CommandPayload contains {seconds: 3600}\nAnd the CommandStatus is PENDING"
+        },
+        {
+          "id": "US-3-AC-2",
+          "gherkin": "Given a CMD_SCHEDULED_SHUTDOWN Command with payload {seconds: 3600} is received by the client\nWhen the client executes the command\nThen the OS shutdown timer is set for 3600 seconds\nAnd a CommandResult with status SUCCESS is returned"
+        },
+        {
+          "id": "US-3-AC-3",
+          "gherkin": "Given I attempt to create a CMD_SCHEDULED_SHUTDOWN Command with payload {seconds: -10}\nWhen the server validates the payload\nThen the Command is rejected\nAnd an error is returned: 'seconds must be a positive integer'"
+        }
+      ],
+      "glossary_terms": ["Command", "CommandType", "CommandPayload", "CommandStatus", "CommandResult", "ScheduledShutdown"]
+    },
+    {
+      "id": "US-4",
+      "epic": "Device Control",
+      "title": "Cancel a scheduled shutdown",
+      "narrative": "As a user, I want to cancel a scheduled shutdown if I change my mind.",
+      "bounded_context": "CommandDispatch",
+      "priority": 3,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-4-AC-1",
+          "gherkin": "Given a CMD_SCHEDULED_SHUTDOWN Command exists with CommandStatus QUEUED or RUNNING\nWhen I click 'Cancel' on that Command in the dashboard\nThen a CancelCommand action is issued\nAnd the CommandStatus transitions to CANCELLED"
+        },
+        {
+          "id": "US-4-AC-2",
+          "gherkin": "Given a Command with CommandStatus SUCCESS\nWhen I attempt to cancel it\nThen the cancellation is rejected\nAnd an error is returned: 'Cannot cancel a Command in terminal state SUCCESS'"
+        }
+      ],
+      "glossary_terms": ["Command", "CommandStatus", "CommandType"]
+    },
+    {
+      "id": "US-5",
+      "epic": "Device Control",
+      "title": "Set device volume to 50%",
+      "narrative": "As a user, I want to set the volume on my PC to 50% remotely so I can adjust music without getting up.",
+      "bounded_context": "CommandDispatch",
+      "priority": 3,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-5-AC-1",
+          "gherkin": "Given I am on the Device detail page\nWhen I use the Volume slider to select 50\nThen a Command of CommandType CMD_SET_VOLUME is created\nAnd the CommandPayload is {level: 50, mute: false}"
+        },
+        {
+          "id": "US-5-AC-2",
+          "gherkin": "Given a CMD_SET_VOLUME Command with payload {level: 50, mute: false} is received by the client\nWhen the client executes the command\nThen the system audio volume is set to 50%\nAnd a CommandResult with status SUCCESS and output 'Volume set to 50%' is returned"
+        },
+        {
+          "id": "US-5-AC-3",
+          "gherkin": "Given I attempt to create a CMD_SET_VOLUME Command with payload {level: 150}\nWhen the server validates the payload\nThen the Command is rejected\nAnd an error is returned: 'level must be in range 0–100'"
+        }
+      ],
+      "glossary_terms": ["Command", "CommandType", "CommandPayload", "CommandResult", "CommandExecutor"]
+    },
+    {
+      "id": "US-6",
+      "epic": "Intelligence & Monitoring",
+      "title": "Save a URL as a Preset",
+      "narrative": "As a user, I want to save a YouTube link as a Preset so I can easily reopen it on my PC later.",
+      "bounded_context": "PresetManagement",
+      "priority": 5,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-6-AC-1",
+          "gherkin": "Given I am on the Presets page\nWhen I enter name='LoFi Playlist' and url='https://www.youtube.com/playlist?list=abc123' and click Save\nThen a Preset is created with the given name and URL\nAnd it appears in the Presets list"
+        },
+        {
+          "id": "US-6-AC-2",
+          "gherkin": "Given a Preset named 'LoFi Playlist' exists\nWhen I click 'Open on Gaming PC'\nThen a Command of CommandType CMD_OPEN_PRESET is issued to 'Gaming PC'\nAnd the CommandPayload contains {url: 'https://www.youtube.com/playlist?list=abc123'}"
+        },
+        {
+          "id": "US-6-AC-3",
+          "gherkin": "Given I attempt to create a Preset with an empty name\nWhen I click Save\nThen the Preset is rejected\nAnd an error is returned: 'PresetName must not be empty'"
+        }
+      ],
+      "glossary_terms": ["Preset", "Command", "CommandType", "CommandPayload"]
+    },
+    {
+      "id": "US-7",
+      "epic": "Intelligence & Monitoring",
+      "title": "See real-time CPU and RAM usage",
+      "narrative": "As a user, I want to see real-time CPU and RAM usage of my PC so I can detect performance issues.",
+      "bounded_context": "Monitoring",
+      "priority": 5,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-7-AC-1",
+          "gherkin": "Given my Device is ONLINE\nWhen the dashboard renders the Device detail page\nThen I see SystemMetrics showing cpu_percent and ram_percent\nAnd these values were collected within the last 30 seconds"
+        },
+        {
+          "id": "US-7-AC-2",
+          "gherkin": "Given a CMD_SYSTEM_INFO Command is executed by the client\nWhen the execution completes\nThen a CommandResult is returned with output containing cpu_percent (float 0–100) and ram_percent (float 0–100)"
+        }
+      ],
+      "glossary_terms": ["SystemMetrics", "Device", "DeviceStatus", "Command", "CommandResult"]
+    },
+    {
+      "id": "US-8",
+      "epic": "Intelligence & Monitoring",
+      "title": "Smart suggestion: Close Browser when RAM > 90%",
+      "narrative": "As a user, I want the system to suggest 'Close Browser' when my PC's RAM usage exceeds 90%, so I can act before a crash.",
+      "bounded_context": "Monitoring",
+      "priority": 7,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-8-AC-1",
+          "gherkin": "Given SystemMetrics for a Device shows ram_percent = 92.0\nWhen the SmartSuggestionEngine evaluates the MetricsThreshold (threshold: 90)\nThen a ThresholdExceeded event is emitted\nAnd a suggestion 'Close Browser' is displayed in the dashboard for that Device"
+        }
+      ],
+      "glossary_terms": ["SystemMetrics", "MetricsThreshold", "SmartSuggestionEngine", "Device"]
+    },
+    {
+      "id": "US-9",
+      "epic": "Reliability",
+      "title": "Queue commands for offline devices",
+      "narrative": "As a user, I want commands to be queued if my device is offline and executed automatically when it comes back online.",
+      "bounded_context": "CommandDispatch",
+      "priority": 2,
+      "status": "PENDING",
+      "acceptance_criteria": [
+        {
+          "id": "US-9-AC-1",
+          "gherkin": "Given a Device has DeviceStatus OFFLINE\nWhen I issue a Command to that Device\nThen the Command is created with CommandStatus PENDING\nAnd it is stored in the CommandQueue for that Device"
+        },
+        {
+          "id": "US-9-AC-2",
+          "gherkin": "Given a Device with 3 PENDING Commands in its CommandQueue comes back ONLINE\nWhen the Device's client polls GET /api/v1/commands/pending\nThen all 3 Commands are returned in FIFO order\nAnd each Command's status transitions to SENT as it is dispatched"
+        }
+      ],
+      "glossary_terms": ["CommandQueue", "Command", "CommandStatus", "Device", "DeviceStatus"]
+    }
+  ]
+}
