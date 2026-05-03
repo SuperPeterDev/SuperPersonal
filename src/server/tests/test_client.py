@@ -69,3 +69,59 @@ class TestShellExecExecutor:
             result = executor.execute(CommandPayload(command_str='bad_cmd'))
 
         assert 'error msg' in result.output
+
+
+import json
+from src.client.executors.system_advanced_executors import (
+    ListProcessesExecutor, KillProcessExecutor,
+    ClipboardGetExecutor, ClipboardSetExecutor,
+)
+
+
+class TestProcessExecutors:
+    def test_list_processes_returns_json_list(self):
+        executor = ListProcessesExecutor()
+        with patch('psutil.process_iter') as mock_iter:
+            mock_proc = MagicMock()
+            mock_proc.info = {'pid': 1, 'name': 'test.exe', 'cpu_percent': 0.5, 'memory_percent': 1.2}
+            mock_iter.return_value = [mock_proc]
+            result = executor.execute(CommandPayload())
+
+        assert result.status == CommandStatus.SUCCESS
+        processes = json.loads(result.output)
+        assert processes[0]['pid'] == 1
+        assert processes[0]['name'] == 'test.exe'
+
+    def test_kill_process_calls_kill(self):
+        executor = KillProcessExecutor()
+        with patch('psutil.Process') as MockProc:
+            result = executor.execute(CommandPayload(pid=9999))
+            MockProc.return_value.kill.assert_called_once()
+
+        assert result.status == CommandStatus.SUCCESS
+
+    def test_kill_process_missing_pid_fails(self):
+        executor = KillProcessExecutor()
+        result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+
+class TestClipboardExecutors:
+    def test_clipboard_get_returns_text(self):
+        executor = ClipboardGetExecutor()
+        with patch('pyperclip.paste', return_value='copied text'):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.SUCCESS
+        assert result.output == 'copied text'
+
+    def test_clipboard_set_writes_text(self):
+        executor = ClipboardSetExecutor()
+        with patch('pyperclip.copy') as mock_copy:
+            result = executor.execute(CommandPayload(text='new text'))
+            mock_copy.assert_called_once_with('new text')
+        assert result.status == CommandStatus.SUCCESS
+
+    def test_clipboard_set_missing_text_fails(self):
+        executor = ClipboardSetExecutor()
+        result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
