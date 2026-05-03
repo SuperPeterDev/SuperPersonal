@@ -5,14 +5,17 @@ Target: http://34.182.12.121:8000
 Tests the full authenticated UI flow against the live production server.
 """
 
+import os
 import sys
 import json
 import time
 import requests
 
 BASE = "http://34.182.12.121:8000"
-USERNAME = "admin"
-PASSWORD = "admin123"
+USERNAME = os.environ.get("SUPEROPERSONAL_TEST_USER", "admin")
+PASSWORD = os.environ.get("SUPEROPERSONAL_TEST_PASS", "")
+if not PASSWORD:
+    raise RuntimeError("Set SUPEROPERSONAL_TEST_PASS env var to run E2E tests")
 
 s = requests.Session()
 passed = 0
