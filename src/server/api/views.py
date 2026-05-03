@@ -1,14 +1,19 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from django.utils import timezone
+from django.db.models import Q
 from .models import Tbl_Device, Tbl_Command, Tbl_Preset
 from src.shared.enums import CommandStatus
 from .serializers import DeviceSerializer, CommandSerializer, PresetSerializer
+
 
 class DeviceViewSet(viewsets.ModelViewSet):
     queryset = Tbl_Device.objects.all()
     serializer_class = DeviceSerializer
     lookup_field = 'hardware_id'
+    permission_classes = [AllowAny]  # Device client registers without user session
 
     def create(self, request, *args, **kwargs):
         hardware_id = request.data.get('hardware_id')
@@ -60,6 +65,13 @@ from asgiref.sync import async_to_sync
 class CommandViewSet(viewsets.ModelViewSet):
     queryset = Tbl_Command.objects.all()
     serializer_class = CommandSerializer
+    # Default: IsAuthenticated (web user creates commands)
+
+    def get_permissions(self):
+        # Device client polls and posts results without user session
+        if self.action in ('pending', 'result'):
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -85,9 +97,12 @@ class CommandViewSet(viewsets.ModelViewSet):
         if not hardware_id:
             return Response({"error": "device_id required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        now = timezone.now()
         commands = Tbl_Command.objects.filter(
             device__hardware_id=hardware_id,
             status=CommandStatus.PENDING
+        ).filter(
+            Q(scheduled_for__isnull=True) | Q(scheduled_for__lte=now)
         )
         command_ids = list(commands.values_list('pk_command_id', flat=True))
         commands.update(status=CommandStatus.SENT)

@@ -40,6 +40,25 @@ class TestCommandModel:
         assert cmd.executed_at is None
 
 @pytest.mark.django_db
+class TestScheduledCommand:
+    def test_command_has_scheduled_for_field(self):
+        device = Tbl_Device.objects.create(hardware_id="sched-device")
+        future = timezone.now() + timedelta(minutes=30)
+        cmd = Tbl_Command.objects.create(
+            device=device,
+            command_type=CommandType.CMD_PING,
+            status=CommandStatus.PENDING,
+            scheduled_for=future
+        )
+        cmd.refresh_from_db()
+        assert cmd.scheduled_for is not None
+
+    def test_command_scheduled_for_defaults_null(self):
+        device = Tbl_Device.objects.create(hardware_id="nosched-device")
+        cmd = Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING)
+        assert cmd.scheduled_for is None
+
+@pytest.mark.django_db
 class TestPresetModel:
     def test_create_preset(self):
         preset = Tbl_Preset.objects.create(

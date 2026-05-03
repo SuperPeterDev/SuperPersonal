@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperPersonal — Dock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: { DEFAULT: '#3b82f6' } } } }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body { @apply bg-gray-950 text-white font-sans antialiased; }
+        .glass { @apply bg-white/5 backdrop-blur-lg border border-white/10; }
+    </style>
+    {% load static %}
+</head>
+<body class="overflow-hidden">
+
+<div id="dock-app" class="fixed inset-0 bg-gray-950 text-white overflow-hidden">
+  <!-- Status Bar -->
+  <div id="status-bar" class="fixed top-0 left-0 right-0 h-8 bg-black/40 backdrop-blur border-b border-white/5 flex items-center px-4 text-xs text-gray-400 z-30 gap-4">
+    <span id="sb-status">🟡 Connecting...</span>
+    <span id="sb-stats">CPU --% RAM --%</span>
+    <span class="flex-1"></span>
+    <span id="sb-latency">--ms</span>
+    <span id="sb-poll">↑ --</span>
+    <span id="sb-queue">Queue: 0</span>
+  </div>
+
+  <!-- Pipeline -->
+  <div id="pipeline" class="fixed top-8 left-0 right-0 h-6 bg-black/30 backdrop-blur border-b border-white/5 flex items-center justify-center gap-1 text-[10px] text-gray-500 z-30">
+    <span id="pl-client" class="px-1.5">CLIENT</span>→
+    <span id="pl-fetch" class="px-1.5">FETCH</span>→
+    <span id="pl-pending" class="px-1.5">PENDING</span>→
+    <span id="pl-sent" class="px-1.5">SENT</span>→
+    <span id="pl-running" class="px-1.5">RUNNING</span>→
+    <span id="pl-result" class="px-1.5">RESULT</span>
+  </div>
+  <div id="pipeline-active" class="fixed top-[56px] left-0 right-0 text-center text-xs text-gray-400 z-30">No active command</div>
+
+  <!-- Device Tabs -->
+  <div id="device-tabs" class="fixed top-[72px] left-0 right-0 flex items-center gap-1 px-4 py-1 z-30 overflow-x-auto">
+  </div>
+
+  <!-- Screenshot Hero -->
+  <div id="screenshot-hero" class="absolute inset-0 flex items-center justify-center bg-gray-950">
+    <p class="text-gray-600 text-lg">No screenshot yet. Click 📸 Snap to capture.</p>
+  </div>
+  <img id="screenshot-img" class="absolute inset-0 w-full h-full object-contain hidden" alt="Live screenshot" />
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2"></div>
+
+  <!-- Dock Bar (filled by dock.js) -->
+  <div id="dock-container"></div>
+</div>
+
+<script src="{% static 'js/dock/registry.js' %}"></script>
+<script src="{% static 'js/dock/dock.js' %}"></script>
+<script src="{% static 'js/status-bar.js' %}"></script>
+<script src="{% static 'js/pipeline.js' %}"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+<script src="{% static 'js/keyboard.js' %}"></script>
+<script src="{% static 'js/app-v2.js' %}"></script>
+<script src="{% static 'js/dock/items/screenshot.js' %}"></script>
+<script src="{% static 'js/dock/items/shell.js' %}"></script>
+<script src="{% static 'js/dock/items/clipboard.js' %}"></script>
+<script src="{% static 'js/dock/items/files.js' %}"></script>
+<script src="{% static 'js/dock/items/process.js' %}"></script>
+<script src="{% static 'js/dock/items/queue.js' %}"></script>
+<script src="{% static 'js/dock/items/volume.js' %}"></script>
+<script src="{% static 'js/dock/items/schedule.js' %}"></script>
+<script src="{% static 'js/dock/items/quick.js' %}"></script>
+<script src="{% static 'js/dock/items/lock.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/dock.css' %}">
+</body>
+</html>

@@ -68,6 +68,10 @@
                     class="p-4 bg-red-600/20 border border-red-500/30 rounded-xl hover:bg-red-600/40 transition">
                     Restart
                 </button>
+                <button onclick="openScheduleModal()"
+                    class="p-4 bg-yellow-600/20 border border-yellow-500/30 rounded-xl hover:bg-yellow-600/40 transition">
+                    Schedule
+                </button>
             </div>
         </div>
 
@@ -120,15 +124,81 @@
             </div>
         </div>
 
+        <!-- Process Manager -->
+        <div class="glass p-6 rounded-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Process Manager</h3>
+                <button onclick="loadProcesses()"
+                    class="text-xs text-primary hover:text-white transition">Refresh</button>
+            </div>
+            <div id="process-table" class="overflow-auto max-h-64 text-sm">
+                <p class="text-gray-500 italic">Click Refresh to load processes.</p>
+            </div>
+        </div>
+
+        <!-- Clipboard -->
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4">Clipboard</h3>
+            <div class="flex space-x-3 mb-3">
+                <button onclick="sendCommand('CMD_CLIPBOARD_GET')"
+                    class="px-4 py-2 bg-teal-600/20 border border-teal-500/30 rounded-lg hover:bg-teal-600/40 transition text-sm">
+                    Read Clipboard
+                </button>
+            </div>
+            <div class="flex space-x-3">
+                <input id="clipboard-input" type="text" placeholder="Text to send to clipboard..."
+                    class="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+                <button onclick="setClipboard()"
+                    class="px-4 py-2 bg-teal-600/20 border border-teal-500/30 rounded-lg hover:bg-teal-600/40 transition text-sm">
+                    Set Clipboard
+                </button>
+            </div>
+        </div>
+
+        <!-- File Browser -->
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4">File Browser</h3>
+            <div class="flex space-x-3 mb-3">
+                <input id="file-path-input" type="text" value="C:/"
+                    class="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary"
+                    onkeydown="if(event.key==='Enter') browsePath()" />
+                <button onclick="browsePath()"
+                    class="px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-lg hover:bg-indigo-600/40 transition text-sm">
+                    Browse
+                </button>
+            </div>
+            <div id="file-list" class="overflow-auto max-h-64 text-sm">
+                <p class="text-gray-500 italic">Enter a path and click Browse.</p>
+            </div>
+        </div>
+
         <!-- Presets -->
         <div class="glass p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">Presets</h3>
-            <div class="flex gap-3 flex-wrap">
-                {% for preset in presets %}
-                <button onclick="openPreset('{{ preset.url }}')"
-                    class="px-4 py-2 bg-pink-500/20 border border-pink-500/30 rounded-lg hover:bg-pink-500/40 transition text-sm">
-                    {{ preset.name }}
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Presets</h3>
+                <button onclick="togglePresetForm()"
+                    class="text-xs text-primary hover:text-white transition">+ Add</button>
+            </div>
+
+            <div id="preset-add-form" class="hidden mb-4 space-y-2">
+                <input id="preset-name" type="text" placeholder="Name (e.g. LoFi Playlist)"
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                <input id="preset-url" type="url" placeholder="https://..."
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                <button onclick="savePreset()"
+                    class="w-full py-2 bg-pink-600/30 border border-pink-500/40 rounded-lg hover:bg-pink-600/50 transition text-sm">
+                    Save Preset
                 </button>
+            </div>
+
+            <div id="preset-list" class="flex gap-3 flex-wrap">
+                {% for preset in presets %}
+                <div class="flex items-center space-x-1 px-3 py-2 bg-pink-500/20 border border-pink-500/30 rounded-lg">
+                    <button onclick="openPreset('{{ preset.url }}')"
+                        class="hover:text-pink-300 transition text-sm">{{ preset.name }}</button>
+                    <button onclick="deletePreset('{{ preset.pk_preset_id }}')"
+                        class="text-gray-500 hover:text-red-400 transition text-xs ml-1">x</button>
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -151,6 +221,47 @@
                     {% endif %}
                 </div>
                 {% endfor %}
+            </div>
+        <!-- Schedule Modal -->
+        <div id="schedule-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div class="glass p-8 rounded-2xl w-full max-w-md space-y-4">
+                <h3 class="text-xl font-bold">Schedule a Command</h3>
+
+                <div>
+                    <label class="text-gray-400 text-sm block mb-1">Command Type</label>
+                    <select id="sched-type"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm">
+                        <option value="CMD_SCREENSHOT">Screenshot</option>
+                        <option value="CMD_SYSTEM_INFO">System Info</option>
+                        <option value="CMD_PING">Ping</option>
+                        <option value="CMD_LOCK_PC">Lock PC</option>
+                        <option value="CMD_SHUTDOWN">Shutdown</option>
+                        <option value="CMD_SHELL_EXEC">Shell Exec</option>
+                    </select>
+                </div>
+
+                <div id="sched-shell-row" class="hidden">
+                    <label class="text-gray-400 text-sm block mb-1">Shell Command</label>
+                    <input id="sched-shell-input" type="text"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm font-mono" />
+                </div>
+
+                <div>
+                    <label class="text-gray-400 text-sm block mb-1">Run at (local time)</label>
+                    <input id="sched-datetime" type="datetime-local"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="submitSchedule()"
+                        class="flex-1 py-2 bg-yellow-600/30 border border-yellow-500/40 rounded-lg hover:bg-yellow-600/50 transition">
+                        Schedule
+                    </button>
+                    <button onclick="closeScheduleModal()"
+                        class="flex-1 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -213,6 +324,180 @@
         if (match) {
             document.getElementById('cpu-stat').innerText = match[1] + '%';
             document.getElementById('ram-stat').innerText = match[2] + '%';
+        }
+    }
+
+    function loadProcesses() {
+        sendCommand('CMD_LIST_PROCESSES');
+    }
+
+    function killProcess(pid) {
+        if (!confirm(`Kill PID ${pid}?`)) return;
+        sendCommand('CMD_KILL_PROCESS', { pid: parseInt(pid) });
+    }
+
+    function setClipboard() {
+        const text = document.getElementById('clipboard-input').value;
+        if (!text) return;
+        sendCommand('CMD_CLIPBOARD_SET', { text: text });
+        document.getElementById('clipboard-input').value = '';
+    }
+
+    window.handleProcessList = function(output) {
+        const table = document.getElementById('process-table');
+        if (!table) return;
+        try {
+            const procs = JSON.parse(output);
+            let html = '<table class="w-full text-xs"><thead><tr class="text-gray-500 border-b border-white/10"><th class="text-left py-1">PID</th><th class="text-left py-1">Name</th><th class="text-right py-1">MEM%</th><th class="py-1"></th></tr></thead><tbody>';
+            for (const p of procs) {
+                html += `<tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="py-1 font-mono">${p.pid}</td>
+                    <td class="py-1">${p.name || '-'}</td>
+                    <td class="py-1 text-right text-purple-400">${(p.memory_percent||0).toFixed(1)}%</td>
+                    <td class="py-1 text-right"><button onclick="killProcess(${p.pid})" class="text-red-400 hover:text-red-200 px-2">Kill</button></td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            table.innerHTML = html;
+        } catch(e) {
+            table.innerHTML = `<p class="text-red-400">${output}</p>`;
+        }
+    };
+
+    function browsePath() {
+        const path = document.getElementById('file-path-input').value.trim();
+        if (!path) return;
+        sendCommand('CMD_FILE_LIST', { path: path });
+    }
+
+    function readFile(path) {
+        sendCommand('CMD_FILE_READ', { path: path });
+    }
+
+    window.handleFileList = function(output) {
+        const container = document.getElementById('file-list');
+        if (!container) return;
+        try {
+            const items = JSON.parse(output);
+            let html = '<ul class="space-y-1">';
+            for (const item of items) {
+                const icon = item.type === 'dir' ? '📁' : '📄';
+                const sizeStr = item.size != null ? `<span class="text-gray-500 text-xs ml-2">${(item.size/1024).toFixed(1)}KB</span>` : '';
+                if (item.type === 'dir') {
+                    html += `<li class="hover:bg-white/5 rounded px-2 py-1 cursor-pointer" onclick="navigateTo('${item.path.replace(/\\/g, '\\\\')}')">
+                        ${icon} ${item.name}
+                    </li>`;
+                } else {
+                    html += `<li class="hover:bg-white/5 rounded px-2 py-1 flex justify-between items-center">
+                        <span>${icon} ${item.name}${sizeStr}</span>
+                        <button onclick="readFile('${item.path.replace(/\\/g, '\\\\')}');" class="text-xs text-primary hover:text-white ml-4">View</button>
+                    </li>`;
+                }
+            }
+            html += '</ul>';
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = `<p class="text-red-400">${output}</p>`;
+        }
+    };
+
+    function navigateTo(path) {
+        document.getElementById('file-path-input').value = path;
+        sendCommand('CMD_FILE_LIST', { path: path });
+    }
+
+    window.handleFileRead = function(output) {
+        const container = document.getElementById('file-list');
+        if (!container) return;
+        const escaped = output.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        container.innerHTML = `<pre class="bg-black/40 rounded-lg p-3 text-xs overflow-auto max-h-64 whitespace-pre-wrap">${escaped}</pre>
+            <button onclick="browsePath()" class="mt-2 text-xs text-primary hover:text-white">Back to directory</button>`;
+    };
+
+    window.handleClipboardGet = function(output) {
+        const container = document.getElementById('clipboard-input');
+        if (container) {
+            container.value = output;
+        }
+    };
+
+    function openScheduleModal() {
+        // Default to 5 minutes from now
+        const dt = new Date(Date.now() + 5 * 60 * 1000);
+        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16);
+        document.getElementById('sched-datetime').value = local;
+        document.getElementById('schedule-modal').classList.remove('hidden');
+        document.getElementById('sched-type').addEventListener('change', function() {
+            const row = document.getElementById('sched-shell-row');
+            row.classList.toggle('hidden', this.value !== 'CMD_SHELL_EXEC');
+        });
+    }
+
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').classList.add('hidden');
+    }
+
+    async function submitSchedule() {
+        const type = document.getElementById('sched-type').value;
+        const dt = document.getElementById('sched-datetime').value;
+        if (!dt) { showToast('Please choose a time.'); return; }
+
+        const payload = {};
+        if (type === 'CMD_SHELL_EXEC') {
+            payload.command_str = document.getElementById('sched-shell-input').value;
+        }
+
+        const body = {
+            device: DEVICE_ID,
+            command_type: type,
+            payload: payload,
+            scheduled_for: new Date(dt).toISOString()
+        };
+
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            showToast(`Scheduled ${type} for ${dt}`);
+            closeScheduleModal();
+        } else {
+            showToast('Schedule failed');
+        }
+    }
+
+    function togglePresetForm() {
+        document.getElementById('preset-add-form').classList.toggle('hidden');
+    }
+
+    async function savePreset() {
+        const name = document.getElementById('preset-name').value.trim();
+        const url = document.getElementById('preset-url').value.trim();
+        if (!name || !url) { showToast('Name and URL required'); return; }
+
+        const res = await fetch('/api/v1/presets/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ name, url })
+        });
+        if (res.ok) {
+            showToast(`Preset "${name}" saved`);
+            setTimeout(() => location.reload(), 500);
+        }
+    }
+
+    async function deletePreset(presetId) {
+        if (!confirm('Delete this preset?')) return;
+        const res = await fetch(`/api/v1/presets/${presetId}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        if (res.ok || res.status === 204) {
+            showToast('Preset deleted');
+            setTimeout(() => location.reload(), 300);
         }
     }
 </script>

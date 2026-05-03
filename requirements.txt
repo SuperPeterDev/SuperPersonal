@@ -1,5 +1,6 @@
 daphne
 django
+whitenoise
 djangorestframework
 djangorestframework-simplejwt
 channels
@@ -14,6 +15,7 @@ Pillow
 pycaw; sys_platform == 'win32'
 comtypes; sys_platform == 'win32'
 psutil
+pyperclip
 pyautogui; sys_platform == 'win32'
 dj-database-url
 python-dotenv

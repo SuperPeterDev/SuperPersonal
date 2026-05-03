@@ -1,0 +1,77 @@
+/* dock.css — Dock-specific + mobile styles */
+
+/* Toast slide-in animation */
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Flyout transition */
+#flyout-container {
+  transition: all 0.3s ease-out;
+  animation: flyoutUp 0.3s ease-out;
+}
+@keyframes flyoutUp {
+  from { transform: translate(-50%, 20px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* Screenshot hero */
+#screenshot-img {
+  object-fit: contain;
+}
+
+/* Mobile adaptation */
+@media (max-width: 767px) {
+  #status-bar {
+    font-size: 10px;
+    gap: 8px;
+    padding: 0 8px;
+  }
+  #pipeline, #pipeline-active {
+    display: none;
+  }
+  #device-tabs {
+    top: 32px;
+    gap: 2px;
+  }
+  #screenshot-hero {
+    top: 56px;
+    bottom: 140px;
+  }
+  #screenshot-img {
+    top: 56px;
+    bottom: 140px;
+  }
+  #dock-bar {
+    padding: 4px;
+  }
+  #dock-icons {
+    gap: 2px;
+    padding: 6px 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  #dock-icons button {
+    min-width: 56px;
+    padding: 6px 8px;
+  }
+  #dock-icons button span:first-child {
+    font-size: 1.25rem;
+  }
+  #dock-icons button span:last-child {
+    font-size: 8px;
+  }
+  #flyout-container {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    bottom: 120px;
+    padding: 0 8px;
+  }
+  #flyout-container > div {
+    width: 100% !important;
+    max-height: 40vh !important;
+  }
+}

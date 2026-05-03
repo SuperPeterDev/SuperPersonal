@@ -14,6 +14,8 @@ import src.client.executors.media_executors
 import src.client.executors.power_executors
 import src.client.executors.screenshot_executor
 import src.client.executors.shell_executor
+import src.client.executors.system_advanced_executors
+import src.client.executors.file_executor
 
 # Import Schemas
 from src.shared.schemas import Command, CommandResult, CommandStatus
