@@ -59,6 +59,8 @@ TEMPLATES = [
 WSGI_APPLICATION = 'src.server.super_personal.wsgi.application'
 ASGI_APPLICATION = 'src.server.super_personal.asgi.application'
 
+STATIC_URL = '/static/'
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels.layers.InMemoryChannelLayer",
