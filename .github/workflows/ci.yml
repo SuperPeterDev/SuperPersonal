@@ -10,6 +10,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install whitenoise
       - name: Run tests
-        run: pytest
+        run: cd src/server && python -m pytest tests/ -v
