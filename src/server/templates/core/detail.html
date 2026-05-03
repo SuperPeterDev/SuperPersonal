@@ -68,6 +68,10 @@
                     class="p-4 bg-red-600/20 border border-red-500/30 rounded-xl hover:bg-red-600/40 transition">
                     Restart
                 </button>
+                <button onclick="openScheduleModal()"
+                    class="p-4 bg-yellow-600/20 border border-yellow-500/30 rounded-xl hover:bg-yellow-600/40 transition">
+                    Schedule
+                </button>
             </div>
         </div>
 
@@ -199,6 +203,47 @@
                     {% endif %}
                 </div>
                 {% endfor %}
+            </div>
+        <!-- Schedule Modal -->
+        <div id="schedule-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div class="glass p-8 rounded-2xl w-full max-w-md space-y-4">
+                <h3 class="text-xl font-bold">Schedule a Command</h3>
+
+                <div>
+                    <label class="text-gray-400 text-sm block mb-1">Command Type</label>
+                    <select id="sched-type"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm">
+                        <option value="CMD_SCREENSHOT">Screenshot</option>
+                        <option value="CMD_SYSTEM_INFO">System Info</option>
+                        <option value="CMD_PING">Ping</option>
+                        <option value="CMD_LOCK_PC">Lock PC</option>
+                        <option value="CMD_SHUTDOWN">Shutdown</option>
+                        <option value="CMD_SHELL_EXEC">Shell Exec</option>
+                    </select>
+                </div>
+
+                <div id="sched-shell-row" class="hidden">
+                    <label class="text-gray-400 text-sm block mb-1">Shell Command</label>
+                    <input id="sched-shell-input" type="text"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm font-mono" />
+                </div>
+
+                <div>
+                    <label class="text-gray-400 text-sm block mb-1">Run at (local time)</label>
+                    <input id="sched-datetime" type="datetime-local"
+                        class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button onclick="submitSchedule()"
+                        class="flex-1 py-2 bg-yellow-600/30 border border-yellow-500/40 rounded-lg hover:bg-yellow-600/50 transition">
+                        Schedule
+                    </button>
+                    <button onclick="closeScheduleModal()"
+                        class="flex-1 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -357,5 +402,53 @@
             container.value = output;
         }
     };
+
+    function openScheduleModal() {
+        // Default to 5 minutes from now
+        const dt = new Date(Date.now() + 5 * 60 * 1000);
+        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16);
+        document.getElementById('sched-datetime').value = local;
+        document.getElementById('schedule-modal').classList.remove('hidden');
+        document.getElementById('sched-type').addEventListener('change', function() {
+            const row = document.getElementById('sched-shell-row');
+            row.classList.toggle('hidden', this.value !== 'CMD_SHELL_EXEC');
+        });
+    }
+
+    function closeScheduleModal() {
+        document.getElementById('schedule-modal').classList.add('hidden');
+    }
+
+    async function submitSchedule() {
+        const type = document.getElementById('sched-type').value;
+        const dt = document.getElementById('sched-datetime').value;
+        if (!dt) { showToast('Please choose a time.'); return; }
+
+        const payload = {};
+        if (type === 'CMD_SHELL_EXEC') {
+            payload.command_str = document.getElementById('sched-shell-input').value;
+        }
+
+        const body = {
+            device: DEVICE_ID,
+            command_type: type,
+            payload: payload,
+            scheduled_for: new Date(dt).toISOString()
+        };
+
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            showToast(`Scheduled ${type} for ${dt}`);
+            closeScheduleModal();
+        } else {
+            showToast('Schedule failed');
+        }
+    }
 </script>
 {% endblock %}
