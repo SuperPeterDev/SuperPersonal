@@ -71,6 +71,16 @@ function handleCommandUpdate(data) {
         window.handleSystemInfo(data.output || '');
     }
 
+    // Process list dispatch
+    if (data.type === 'CMD_LIST_PROCESSES' && window.handleProcessList) {
+        window.handleProcessList(data.output || '');
+    }
+
+    // File list dispatch
+    if (data.type === 'CMD_FILE_LIST' && window.handleFileList) {
+        window.handleFileList(data.output || '');
+    }
+
     // Toast notification
     showToast(`${data.type || 'Command'}: ${data.status}`);
 }

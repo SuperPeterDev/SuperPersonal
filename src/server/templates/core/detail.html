@@ -120,6 +120,54 @@
             </div>
         </div>
 
+        <!-- Process Manager -->
+        <div class="glass p-6 rounded-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Process Manager</h3>
+                <button onclick="loadProcesses()"
+                    class="text-xs text-primary hover:text-white transition">Refresh</button>
+            </div>
+            <div id="process-table" class="overflow-auto max-h-64 text-sm">
+                <p class="text-gray-500 italic">Click Refresh to load processes.</p>
+            </div>
+        </div>
+
+        <!-- Clipboard -->
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4">Clipboard</h3>
+            <div class="flex space-x-3 mb-3">
+                <button onclick="sendCommand('CMD_CLIPBOARD_GET')"
+                    class="px-4 py-2 bg-teal-600/20 border border-teal-500/30 rounded-lg hover:bg-teal-600/40 transition text-sm">
+                    Read Clipboard
+                </button>
+            </div>
+            <div class="flex space-x-3">
+                <input id="clipboard-input" type="text" placeholder="Text to send to clipboard..."
+                    class="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+                <button onclick="setClipboard()"
+                    class="px-4 py-2 bg-teal-600/20 border border-teal-500/30 rounded-lg hover:bg-teal-600/40 transition text-sm">
+                    Set Clipboard
+                </button>
+            </div>
+        </div>
+
+        <!-- File Browser -->
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4">File Browser</h3>
+            <div class="flex space-x-3 mb-3">
+                <input id="file-path-input" type="text" value="C:/"
+                    class="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary"
+                    onkeydown="if(event.key==='Enter') browsePath()" />
+                <button onclick="browsePath()"
+                    class="px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-lg hover:bg-indigo-600/40 transition text-sm">
+                    Browse
+                </button>
+            </div>
+            <div id="file-list" class="overflow-auto max-h-64 text-sm">
+                <p class="text-gray-500 italic">Enter a path and click Browse.</p>
+            </div>
+        </div>
+
         <!-- Presets -->
         <div class="glass p-6 rounded-2xl">
             <h3 class="text-xl font-bold mb-4">Presets</h3>
@@ -214,6 +262,85 @@
             document.getElementById('cpu-stat').innerText = match[1] + '%';
             document.getElementById('ram-stat').innerText = match[2] + '%';
         }
+    }
+
+    function loadProcesses() {
+        sendCommand('CMD_LIST_PROCESSES');
+    }
+
+    function killProcess(pid) {
+        if (!confirm(`Kill PID ${pid}?`)) return;
+        sendCommand('CMD_KILL_PROCESS', { pid: parseInt(pid) });
+    }
+
+    function setClipboard() {
+        const text = document.getElementById('clipboard-input').value;
+        if (!text) return;
+        sendCommand('CMD_CLIPBOARD_SET', { text: text });
+        document.getElementById('clipboard-input').value = '';
+    }
+
+    window.handleProcessList = function(output) {
+        const table = document.getElementById('process-table');
+        if (!table) return;
+        try {
+            const procs = JSON.parse(output);
+            let html = '<table class="w-full text-xs"><thead><tr class="text-gray-500 border-b border-white/10"><th class="text-left py-1">PID</th><th class="text-left py-1">Name</th><th class="text-right py-1">MEM%</th><th class="py-1"></th></tr></thead><tbody>';
+            for (const p of procs) {
+                html += `<tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="py-1 font-mono">${p.pid}</td>
+                    <td class="py-1">${p.name || '-'}</td>
+                    <td class="py-1 text-right text-purple-400">${(p.memory_percent||0).toFixed(1)}%</td>
+                    <td class="py-1 text-right"><button onclick="killProcess(${p.pid})" class="text-red-400 hover:text-red-200 px-2">Kill</button></td>
+                </tr>`;
+            }
+            html += '</tbody></table>';
+            table.innerHTML = html;
+        } catch(e) {
+            table.innerHTML = `<p class="text-red-400">${output}</p>`;
+        }
+    };
+
+    function browsePath() {
+        const path = document.getElementById('file-path-input').value.trim();
+        if (!path) return;
+        sendCommand('CMD_FILE_LIST', { path: path });
+    }
+
+    function readFile(path) {
+        sendCommand('CMD_FILE_READ', { path: path });
+    }
+
+    window.handleFileList = function(output) {
+        const container = document.getElementById('file-list');
+        if (!container) return;
+        try {
+            const items = JSON.parse(output);
+            let html = '<ul class="space-y-1">';
+            for (const item of items) {
+                const icon = item.type === 'dir' ? '📁' : '📄';
+                const sizeStr = item.size != null ? `<span class="text-gray-500 text-xs ml-2">${(item.size/1024).toFixed(1)}KB</span>` : '';
+                if (item.type === 'dir') {
+                    html += `<li class="hover:bg-white/5 rounded px-2 py-1 cursor-pointer" onclick="navigateTo('${item.path.replace(/\\/g, '\\\\')}')">
+                        ${icon} ${item.name}
+                    </li>`;
+                } else {
+                    html += `<li class="hover:bg-white/5 rounded px-2 py-1 flex justify-between items-center">
+                        <span>${icon} ${item.name}${sizeStr}</span>
+                        <button onclick="readFile('${item.path.replace(/\\/g, '\\\\')}');" class="text-xs text-primary hover:text-white ml-4">View</button>
+                    </li>`;
+                }
+            }
+            html += '</ul>';
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = `<p class="text-red-400">${output}</p>`;
+        }
+    };
+
+    function navigateTo(path) {
+        document.getElementById('file-path-input').value = path;
+        sendCommand('CMD_FILE_LIST', { path: path });
     }
 </script>
 {% endblock %}
