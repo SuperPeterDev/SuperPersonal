@@ -9,6 +9,10 @@ const socket = new WebSocket(wsUrl);
 socket.onopen = function (e) {
     console.log("WebSocket Connection Established");
     updateConnectionStatus(true);
+    // Request notification permission once on connect
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
 };
 
 socket.onclose = function (e) {
@@ -91,8 +95,20 @@ function handleCommandUpdate(data) {
         window.handleClipboardGet(data.output || '');
     }
 
+    // Push notification for terminal states
+    const terminalStatuses = ['SUCCESS', 'FAILED'];
+    if (terminalStatuses.includes(data.status)) {
+        pushNotification(`${data.type || 'Command'} ${data.status}`, data.output ? data.output.substring(0, 80) : '');
+    }
+
     // Toast notification
     showToast(`${data.type || 'Command'}: ${data.status}`);
+}
+
+function pushNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: body, icon: '/static/img/icon.png' });
+    }
 }
 
 function handleDeviceUpdate(data) {
