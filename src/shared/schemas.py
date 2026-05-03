@@ -11,6 +11,9 @@ class CommandPayload(BaseModel):
     mute: Optional[bool] = None
     action: Optional[str] = None
     command_str: Optional[str] = None
+    pid: Optional[int] = None
+    text: Optional[str] = None
+    path: Optional[str] = None
     extra: Dict[str, Any] = Field(default_factory=dict)
 
 class Command(BaseModel):
