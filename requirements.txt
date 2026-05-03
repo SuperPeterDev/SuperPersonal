@@ -10,10 +10,10 @@ pytest
 pytest-django
 requests
 requests-mock
-pycaw
-comtypes
+pycaw; sys_platform == 'win32'
+comtypes; sys_platform == 'win32'
 psutil
-pyautogui
+pyautogui; sys_platform == 'win32'
 dj-database-url
 python-dotenv
 psycopg2-binary
