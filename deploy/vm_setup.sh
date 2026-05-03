@@ -26,7 +26,14 @@ echo "=== 5. Run tests ==="
 python -m pytest tests/ -q
 
 echo "=== 6. Create superuser ==="
-DJANGO_SUPERUSER_USERNAME=admin DJANGO_SUPERUSER_PASSWORD=admin123 DJANGO_SUPERUSER_EMAIL=admin@superpersonal.local python manage.py createsuperuser --noinput 2>/dev/null || echo "Superuser may already exist"
+SUPERUSER_NAME="${SUPEROPERSONAL_SUPERUSER_NAME:-admin}"
+SUPERUSER_PASS="${SUPEROPERSONAL_SUPERUSER_PASS:-}"
+SUPERUSER_EMAIL="${SUPEROPERSONAL_SUPERUSER_EMAIL:-admin@superpersonal.local}"
+if [ -n "$SUPERUSER_PASS" ]; then
+    DJANGO_SUPERUSER_USERNAME="$SUPERUSER_NAME" DJANGO_SUPERUSER_PASSWORD="$SUPERUSER_PASS" DJANGO_SUPERUSER_EMAIL="$SUPERUSER_EMAIL" python manage.py createsuperuser --noinput 2>/dev/null || echo "Superuser may already exist"
+else
+    echo "Skipping superuser creation — set SUPEROPERSONAL_SUPERUSER_PASS to create one"
+fi
 
 echo "=== 7. Start daphne ==="
 nohup daphne -b 0.0.0.0 -p 8000 super_personal.asgi:application > /tmp/superpersonal-server.log 2>&1 &
