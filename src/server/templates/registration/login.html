@@ -12,16 +12,22 @@
         }
     </script>
     <style type="text/tailwindcss">
-        body { @apply bg-gray-900 text-white font-sans antialiased; }
+        body { @apply bg-gray-950 text-white font-sans antialiased; }
         .glass { @apply bg-white/5 backdrop-blur-lg border border-white/10; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
-    <div class="glass p-10 rounded-2xl w-full max-w-sm shadow-2xl">
-        <h1 class="text-3xl font-bold text-center mb-2">
-            <span class="text-primary">Super</span>Personal
-        </h1>
-        <p class="text-gray-400 text-center text-sm mb-8">System Controller</p>
+<body class="min-h-screen flex items-center justify-center bg-gray-950 relative overflow-hidden">
+    <div class="absolute inset-0 opacity-[0.03]"
+         style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 40px 40px;"></div>
+
+    <div class="glass p-10 rounded-2xl w-full max-w-sm shadow-2xl relative z-10">
+        <div class="text-center mb-8">
+            <div class="text-5xl mb-3">🖥️</div>
+            <h1 class="text-3xl font-bold">
+                <span class="text-primary">Super</span>Personal
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">Remote System Controller</p>
+        </div>
 
         {% if form.errors %}
         <div class="bg-red-500/20 border border-red-500/40 rounded-lg px-4 py-2 mb-4 text-sm text-red-300">
@@ -29,17 +35,23 @@
         </div>
         {% endif %}
 
+        {% if user.is_authenticated %}
+        <p class="text-center text-gray-400 text-sm mb-4">Logged in as <strong>{{ user.username }}</strong>.</p>
+        <a href="/" class="block w-full text-center py-3 bg-primary rounded-lg font-medium hover:bg-blue-500 transition">
+            Open Dashboard
+        </a>
+        {% else %}
         <form method="post" class="space-y-4">
             {% csrf_token %}
             <div>
                 <label class="block text-gray-400 text-sm mb-1">Username</label>
-                <input name="username" type="text" autofocus
-                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input name="username" type="text" autofocus autocomplete="username"
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
             </div>
             <div>
                 <label class="block text-gray-400 text-sm mb-1">Password</label>
-                <input name="password" type="password"
-                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+                <input name="password" type="password" autocomplete="current-password"
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition" />
             </div>
             <input type="hidden" name="next" value="{{ next }}" />
             <button type="submit"
@@ -47,6 +59,7 @@
                 Sign In
             </button>
         </form>
+        {% endif %}
     </div>
 </body>
 </html>
