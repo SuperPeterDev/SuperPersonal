@@ -342,5 +342,20 @@
         document.getElementById('file-path-input').value = path;
         sendCommand('CMD_FILE_LIST', { path: path });
     }
+
+    window.handleFileRead = function(output) {
+        const container = document.getElementById('file-list');
+        if (!container) return;
+        const escaped = output.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        container.innerHTML = `<pre class="bg-black/40 rounded-lg p-3 text-xs overflow-auto max-h-64 whitespace-pre-wrap">${escaped}</pre>
+            <button onclick="browsePath()" class="mt-2 text-xs text-primary hover:text-white">Back to directory</button>`;
+    };
+
+    window.handleClipboardGet = function(output) {
+        const container = document.getElementById('clipboard-input');
+        if (container) {
+            container.value = output;
+        }
+    };
 </script>
 {% endblock %}

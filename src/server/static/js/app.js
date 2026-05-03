@@ -81,6 +81,16 @@ function handleCommandUpdate(data) {
         window.handleFileList(data.output || '');
     }
 
+    // File read dispatch
+    if (data.type === 'CMD_FILE_READ' && window.handleFileRead) {
+        window.handleFileRead(data.output || '');
+    }
+
+    // Clipboard get dispatch
+    if (data.type === 'CMD_CLIPBOARD_GET' && window.handleClipboardGet) {
+        window.handleClipboardGet(data.output || '');
+    }
+
     // Toast notification
     showToast(`${data.type || 'Command'}: ${data.status}`);
 }
