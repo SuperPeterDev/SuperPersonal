@@ -61,6 +61,20 @@ class TestCommandAPI:
         assert hasattr(cmd, 'log')
         assert cmd.log.output == "Pong"
 
+    def test_result_ws_message_includes_command_type(self, api_client):
+        from unittest.mock import patch
+        device = Tbl_Device.objects.create(hardware_id="ws-type-device")
+        cmd = Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING)
+
+        url = reverse('command-result', args=[cmd.pk])
+        data = {"status": "SUCCESS", "log": {"output": "Pong"}}
+
+        with patch('api.views.async_to_sync') as mock_async:
+            api_client.post(url, data, format='json')
+            inner_call = mock_async.return_value
+            ws_payload = inner_call.call_args[0][1]
+            assert ws_payload['data']['type'] == CommandType.CMD_PING
+
 @pytest.mark.django_db
 class TestPresetAPI:
     def test_create_preset(self, api_client):

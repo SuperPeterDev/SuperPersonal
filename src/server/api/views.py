@@ -125,6 +125,7 @@ class CommandViewSet(viewsets.ModelViewSet):
                 "data": {
                     "id": str(command.pk_command_id),
                     "device_id": str(command.device.pk_device_id),
+                    "type": command.command_type,
                     "status": command.status,
                     "output": log_data.get('output', '') if log_data else ""
                 }
