@@ -174,13 +174,31 @@
 
         <!-- Presets -->
         <div class="glass p-6 rounded-2xl">
-            <h3 class="text-xl font-bold mb-4">Presets</h3>
-            <div class="flex gap-3 flex-wrap">
-                {% for preset in presets %}
-                <button onclick="openPreset('{{ preset.url }}')"
-                    class="px-4 py-2 bg-pink-500/20 border border-pink-500/30 rounded-lg hover:bg-pink-500/40 transition text-sm">
-                    {{ preset.name }}
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Presets</h3>
+                <button onclick="togglePresetForm()"
+                    class="text-xs text-primary hover:text-white transition">+ Add</button>
+            </div>
+
+            <div id="preset-add-form" class="hidden mb-4 space-y-2">
+                <input id="preset-name" type="text" placeholder="Name (e.g. LoFi Playlist)"
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                <input id="preset-url" type="url" placeholder="https://..."
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm" />
+                <button onclick="savePreset()"
+                    class="w-full py-2 bg-pink-600/30 border border-pink-500/40 rounded-lg hover:bg-pink-600/50 transition text-sm">
+                    Save Preset
                 </button>
+            </div>
+
+            <div id="preset-list" class="flex gap-3 flex-wrap">
+                {% for preset in presets %}
+                <div class="flex items-center space-x-1 px-3 py-2 bg-pink-500/20 border border-pink-500/30 rounded-lg">
+                    <button onclick="openPreset('{{ preset.url }}')"
+                        class="hover:text-pink-300 transition text-sm">{{ preset.name }}</button>
+                    <button onclick="deletePreset('{{ preset.pk_preset_id }}')"
+                        class="text-gray-500 hover:text-red-400 transition text-xs ml-1">x</button>
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -448,6 +466,38 @@
             closeScheduleModal();
         } else {
             showToast('Schedule failed');
+        }
+    }
+
+    function togglePresetForm() {
+        document.getElementById('preset-add-form').classList.toggle('hidden');
+    }
+
+    async function savePreset() {
+        const name = document.getElementById('preset-name').value.trim();
+        const url = document.getElementById('preset-url').value.trim();
+        if (!name || !url) { showToast('Name and URL required'); return; }
+
+        const res = await fetch('/api/v1/presets/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ name, url })
+        });
+        if (res.ok) {
+            showToast(`Preset "${name}" saved`);
+            setTimeout(() => location.reload(), 500);
+        }
+    }
+
+    async function deletePreset(presetId) {
+        if (!confirm('Delete this preset?')) return;
+        const res = await fetch(`/api/v1/presets/${presetId}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        if (res.ok || res.status === 204) {
+            showToast('Preset deleted');
+            setTimeout(() => location.reload(), 300);
         }
     }
 </script>
