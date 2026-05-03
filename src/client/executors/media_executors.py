@@ -1,4 +1,5 @@
 import logging
+import sys
 from src.client.core.executor import CommandExecutor
 from src.client.core.registry import ExecutorRegistry
 from src.shared.schemas import CommandPayload, CommandResult
@@ -8,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 @ExecutorRegistry.register(CommandType.CMD_SET_VOLUME)
 class VolumeExecutor(CommandExecutor):
+    def is_available(self) -> bool:
+        return sys.platform == 'win32'
+
     def execute(self, payload: CommandPayload) -> CommandResult:
         # Lazy imports to prevent Linux import-time crashes
         import pyautogui
@@ -61,6 +65,9 @@ class VolumeExecutor(CommandExecutor):
 
 @ExecutorRegistry.register(CommandType.CMD_MEDIA)
 class MediaExecutor(CommandExecutor):
+    def is_available(self) -> bool:
+        return sys.platform == 'win32'
+
     def execute(self, payload: CommandPayload) -> CommandResult:
         import pyautogui
         action = payload.action
