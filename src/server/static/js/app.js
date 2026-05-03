@@ -37,10 +37,6 @@ socket.onmessage = function (e) {
     }
 };
 
-socket.onclose = function (e) {
-    console.error("WebSocket Connection Closed");
-};
-
 function handleCommandUpdate(data) {
     // If on detail page, update log
     const logContainer = document.getElementById('log-container');
