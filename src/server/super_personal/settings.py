@@ -62,6 +62,7 @@ ASGI_APPLICATION = 'src.server.super_personal.asgi.application'
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "src" / "server" / "static"]
 
 CHANNEL_LAYERS = {
     "default": {
