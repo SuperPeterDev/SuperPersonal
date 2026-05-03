@@ -10,8 +10,11 @@ from src.shared.enums import CommandType, CommandStatus
 class ListProcessesExecutor(CommandExecutor):
     def execute(self, payload: CommandPayload) -> CommandResult:
         processes = []
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
-            processes.append(proc.info)
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+                processes.append(proc.info)
+        except psutil.Error as e:
+            return CommandResult(status=CommandStatus.FAILED, output=f"Process scan failed: {e}")
         processes.sort(key=lambda p: p.get('memory_percent', 0), reverse=True)
         return CommandResult(status=CommandStatus.SUCCESS, output=json.dumps(processes[:50]))
 
@@ -34,7 +37,10 @@ class KillProcessExecutor(CommandExecutor):
 class ClipboardGetExecutor(CommandExecutor):
     def execute(self, payload: CommandPayload) -> CommandResult:
         import pyperclip
-        text = pyperclip.paste()
+        try:
+            text = pyperclip.paste()
+        except Exception as e:
+            return CommandResult(status=CommandStatus.FAILED, output=f"Clipboard read failed: {e}")
         return CommandResult(status=CommandStatus.SUCCESS, output=text)
 
 
@@ -44,5 +50,8 @@ class ClipboardSetExecutor(CommandExecutor):
         if payload.text is None:
             return CommandResult(status=CommandStatus.FAILED, output="No text provided")
         import pyperclip
-        pyperclip.copy(payload.text)
+        try:
+            pyperclip.copy(payload.text)
+        except Exception as e:
+            return CommandResult(status=CommandStatus.FAILED, output=f"Clipboard write failed: {e}")
         return CommandResult(status=CommandStatus.SUCCESS, output=f"Clipboard set ({len(payload.text)} chars)")

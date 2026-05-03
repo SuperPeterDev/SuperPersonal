@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import io
 import sys
+import psutil
 from PIL import Image
 
 from src.shared.schemas import CommandPayload
@@ -105,6 +106,12 @@ class TestProcessExecutors:
         result = executor.execute(CommandPayload())
         assert result.status == CommandStatus.FAILED
 
+    def test_list_processes_handles_psutil_error(self):
+        executor = ListProcessesExecutor()
+        with patch('psutil.process_iter', side_effect=psutil.AccessDenied()):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
 
 class TestClipboardExecutors:
     def test_clipboard_get_returns_text(self):
@@ -125,3 +132,53 @@ class TestClipboardExecutors:
         executor = ClipboardSetExecutor()
         result = executor.execute(CommandPayload())
         assert result.status == CommandStatus.FAILED
+
+    def test_clipboard_get_handles_pyperclip_error(self):
+        executor = ClipboardGetExecutor()
+        with patch('pyperclip.paste', side_effect=Exception("no clipboard")):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+    def test_clipboard_set_handles_pyperclip_error(self):
+        executor = ClipboardSetExecutor()
+        with patch('pyperclip.copy', side_effect=Exception("no clipboard")):
+            result = executor.execute(CommandPayload(text='test'))
+        assert result.status == CommandStatus.FAILED
+
+
+from src.client.executors.file_executor import FileListExecutor, FileReadExecutor
+
+
+class TestFileExecutors:
+    def test_file_list_returns_json(self, tmp_path):
+        (tmp_path / "foo.txt").write_text("hello")
+        (tmp_path / "bar.py").write_text("world")
+        executor = FileListExecutor()
+        result = executor.execute(CommandPayload(path=str(tmp_path)))
+
+        assert result.status == CommandStatus.SUCCESS
+        items = json.loads(result.output)
+        names = [i['name'] for i in items]
+        assert 'foo.txt' in names
+        assert 'bar.py' in names
+
+    def test_file_list_nonexistent_path_fails(self):
+        executor = FileListExecutor()
+        result = executor.execute(CommandPayload(path="/nonexistent/path"))
+        assert result.status == CommandStatus.FAILED
+
+    def test_file_read_returns_text(self, tmp_path):
+        f = tmp_path / "hello.txt"
+        f.write_text("file contents here")
+        executor = FileReadExecutor()
+        result = executor.execute(CommandPayload(path=str(f)))
+        assert result.status == CommandStatus.SUCCESS
+        assert result.output == "file contents here"
+
+    def test_file_read_limits_size(self, tmp_path):
+        f = tmp_path / "big.txt"
+        f.write_text("x" * 200_000)
+        executor = FileReadExecutor()
+        result = executor.execute(CommandPayload(path=str(f)))
+        assert result.status == CommandStatus.SUCCESS
+        assert len(result.output) <= 102_500  # 100KB limit (102400 bytes) + small overhead
