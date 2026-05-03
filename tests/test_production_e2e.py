@@ -10,12 +10,13 @@ import sys
 import json
 import time
 import requests
+import pytest
 
 BASE = "http://34.182.12.121:8000"
 USERNAME = os.environ.get("SUPEROPERSONAL_TEST_USER", "admin")
 PASSWORD = os.environ.get("SUPEROPERSONAL_TEST_PASS", "")
-if not PASSWORD:
-    raise RuntimeError("Set SUPEROPERSONAL_TEST_PASS env var to run E2E tests")
+E2E_SKIP = not PASSWORD
+pytestmark = pytest.mark.skipif(E2E_SKIP, reason="Set SUPEROPERSONAL_TEST_PASS env var")
 
 s = requests.Session()
 passed = 0
