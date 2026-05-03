@@ -1,7 +1,24 @@
-{% extends 'base.html' %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperPersonal — Dock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: { DEFAULT: '#3b82f6' } } } }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body { @apply bg-gray-950 text-white font-sans antialiased; }
+        .glass { @apply bg-white/5 backdrop-blur-lg border border-white/10; }
+    </style>
+    {% load static %}
+</head>
+<body class="overflow-hidden">
 
-{% block content %}
 <div id="dock-app" class="fixed inset-0 bg-gray-950 text-white overflow-hidden">
   <!-- Status Bar -->
   <div id="status-bar" class="fixed top-0 left-0 right-0 h-8 bg-black/40 backdrop-blur border-b border-white/5 flex items-center px-4 text-xs text-gray-400 z-30 gap-4">
@@ -40,9 +57,7 @@
   <!-- Dock Bar (filled by dock.js) -->
   <div id="dock-container"></div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script src="{% static 'js/dock/registry.js' %}"></script>
 <script src="{% static 'js/dock/dock.js' %}"></script>
 <script src="{% static 'js/status-bar.js' %}"></script>
@@ -61,4 +76,5 @@
 <script src="{% static 'js/dock/items/quick.js' %}"></script>
 <script src="{% static 'js/dock/items/lock.js' %}"></script>
 <link rel="stylesheet" href="{% static 'css/dock.css' %}">
-{% endblock %}
+</body>
+</html>
