@@ -50,6 +50,7 @@ class Tbl_Command(models.Model):
         db_index=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    scheduled_for = models.DateTimeField(null=True, blank=True, db_index=True)
     executed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
