@@ -75,6 +75,33 @@ class TestCommandAPI:
             ws_payload = inner_call.call_args[0][1]
             assert ws_payload['data']['type'] == CommandType.CMD_PING
 
+    def test_pending_endpoint_accessible_without_auth(self, unauthenticated_api_client):
+        device = Tbl_Device.objects.create(hardware_id="noauth-poll-device")
+        url = reverse('command-pending') + f"?device_id={device.hardware_id}"
+        response = unauthenticated_api_client.get(url)
+        assert response.status_code == 200
+
+    def test_result_endpoint_accessible_without_auth(self, unauthenticated_api_client):
+        device = Tbl_Device.objects.create(hardware_id="noauth-res-device")
+        cmd = Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING)
+        url = reverse('command-result', args=[cmd.pk])
+        response = unauthenticated_api_client.post(url, {"status": "SUCCESS", "log": {"output": "Pong"}}, format='json')
+        assert response.status_code == 200
+
+    def test_device_registration_accessible_without_auth(self, unauthenticated_api_client):
+        url = reverse('device-list')
+        data = {"hardware_id": "noauth-device", "hostname": "NoAuth Host", "os_config": {}}
+        response = unauthenticated_api_client.post(url, data, format='json')
+        assert response.status_code == 201
+
+    def test_command_create_rejects_unauthenticated(self, unauthenticated_api_client):
+        device = Tbl_Device.objects.create(hardware_id="reject-device")
+        url = reverse('command-list')
+        data = {"device": str(device.pk_device_id), "command_type": "CMD_PING"}
+        response = unauthenticated_api_client.post(url, data, format='json')
+        assert response.status_code in [401, 403]
+
+
 @pytest.mark.django_db
 class TestPresetAPI:
     def test_create_preset(self, api_client):
