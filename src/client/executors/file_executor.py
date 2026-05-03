@@ -49,7 +49,7 @@ class FileReadExecutor(CommandExecutor):
         try:
             raw = p.read_bytes()[:_READ_LIMIT_BYTES]
             try:
-                text = raw.decode('utf-8', errors='replace')
+                text = raw.decode('utf-8')
             except Exception:
                 text = f"[binary file, {p.stat().st_size} bytes]"
             return CommandResult(status=CommandStatus.SUCCESS, output=text)
