@@ -30,7 +30,19 @@ class TestCommandAPI:
         
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
-        assert response.data[0]['status'] == 'PENDING'
+        # After poll, status should be SENT (not PENDING)
+        assert response.data[0]['status'] == 'SENT'
+
+    def test_pending_endpoint_marks_commands_sent(self, api_client):
+        device = Tbl_Device.objects.create(hardware_id="sent-test-device")
+        Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING, status=CommandStatus.PENDING)
+
+        url = reverse('command-pending') + f"?device_id={device.hardware_id}"
+        api_client.get(url)
+
+        # After polling, the command must be SENT — not PENDING
+        cmd = Tbl_Command.objects.get()
+        assert cmd.status == CommandStatus.SENT
 
     def test_submit_result(self, api_client):
         device = Tbl_Device.objects.create(hardware_id="res-device")
@@ -48,6 +60,20 @@ class TestCommandAPI:
         assert cmd.status == "SUCCESS"
         assert hasattr(cmd, 'log')
         assert cmd.log.output == "Pong"
+
+    def test_result_ws_message_includes_command_type(self, api_client):
+        from unittest.mock import patch
+        device = Tbl_Device.objects.create(hardware_id="ws-type-device")
+        cmd = Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING)
+
+        url = reverse('command-result', args=[cmd.pk])
+        data = {"status": "SUCCESS", "log": {"output": "Pong"}}
+
+        with patch('api.views.async_to_sync') as mock_async:
+            api_client.post(url, data, format='json')
+            inner_call = mock_async.return_value
+            ws_payload = inner_call.call_args[0][1]
+            assert ws_payload['data']['type'] == CommandType.CMD_PING
 
 @pytest.mark.django_db
 class TestPresetAPI:

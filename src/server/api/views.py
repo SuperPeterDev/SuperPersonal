@@ -84,12 +84,16 @@ class CommandViewSet(viewsets.ModelViewSet):
         hardware_id = request.query_params.get('device_id')
         if not hardware_id:
             return Response({"error": "device_id required"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         commands = Tbl_Command.objects.filter(
-            device__hardware_id=hardware_id, 
+            device__hardware_id=hardware_id,
             status=CommandStatus.PENDING
         )
-        serializer = self.get_serializer(commands, many=True)
+        command_ids = list(commands.values_list('pk_command_id', flat=True))
+        commands.update(status=CommandStatus.SENT)
+
+        fetched = Tbl_Command.objects.filter(pk_command_id__in=command_ids)
+        serializer = self.get_serializer(fetched, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -121,6 +125,7 @@ class CommandViewSet(viewsets.ModelViewSet):
                 "data": {
                     "id": str(command.pk_command_id),
                     "device_id": str(command.device.pk_device_id),
+                    "type": command.command_type,
                     "status": command.status,
                     "output": log_data.get('output', '') if log_data else ""
                 }

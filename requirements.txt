@@ -10,8 +10,9 @@ pytest
 pytest-django
 requests
 requests-mock
-pycaw
-comtypes
+Pillow
+pycaw; sys_platform == 'win32'
+comtypes; sys_platform == 'win32'
 psutil
 pyautogui; sys_platform == 'win32'
 dj-database-url

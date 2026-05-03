@@ -37,38 +37,42 @@ socket.onmessage = function (e) {
     }
 };
 
-socket.onclose = function (e) {
-    console.error("WebSocket Connection Closed");
-};
-
 function handleCommandUpdate(data) {
     // If on detail page, update log
     const logContainer = document.getElementById('log-container');
-    if (logContainer && DEVICE_ID === data.device_id) {
-
-        // Simple append for now
+    if (logContainer && typeof DEVICE_ID !== 'undefined' && DEVICE_ID === data.device_id) {
         const LogEl = document.createElement('div');
-        const color = data.status === 'SUCCESS' ? 'border-green-500' : (data.status === 'FAILED' ? 'border-red-500' : 'border-gray-500');
+        const color = data.status === 'SUCCESS'
+            ? 'border-green-500'
+            : (data.status === 'FAILED' ? 'border-red-500' : 'border-gray-500');
 
-        LogEl.className = `border-l-2 ${color} pl-3 animate-pulse`;
+        const isImage = data.output && data.output.startsWith('data:image/');
+        let outputHtml;
+        if (isImage) {
+            outputHtml = `<img src="${data.output}" class="mt-2 rounded max-w-full cursor-pointer" onclick="this.classList.toggle('max-w-full')" />`;
+        } else {
+            const escaped = (data.output || data.status || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            outputHtml = `<pre class="text-gray-300 mt-1 whitespace-pre-wrap text-xs">${escaped}</pre>`;
+        }
+
+        LogEl.className = `border-l-2 ${color} pl-3`;
         LogEl.innerHTML = `
             <div class="flex justify-between text-gray-500 text-xs">
                 <span>${data.type || 'Update'}</span>
                 <span>Now</span>
             </div>
-            <p class="text-gray-300 mt-1">${data.output || data.status}</p>
+            ${outputHtml}
         `;
-
-        logContainer.prepend(LogEl); // Newest on top
+        logContainer.prepend(LogEl);
     }
 
     // Special handling for System Info
     if (data.type === 'CMD_SYSTEM_INFO' && window.handleSystemInfo) {
-        window.handleSystemInfo(data.output || "");
+        window.handleSystemInfo(data.output || '');
     }
 
     // Toast notification
-    showToast(`Command ${data.status}: ${data.type || ''}`);
+    showToast(`${data.type || 'Command'}: ${data.status}`);
 }
 
 function handleDeviceUpdate(data) {

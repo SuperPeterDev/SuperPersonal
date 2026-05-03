@@ -106,6 +106,20 @@
             </div>
         </div>
 
+        <!-- Shell Exec -->
+        <div class="glass p-6 rounded-2xl">
+            <h3 class="text-xl font-bold mb-4">Shell Command</h3>
+            <div class="flex space-x-3">
+                <input id="shell-input" type="text" placeholder="e.g. ipconfig /all"
+                    class="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm font-mono focus:outline-none focus:border-primary"
+                    onkeydown="if(event.key==='Enter') runShellCmd()" />
+                <button onclick="runShellCmd()"
+                    class="px-6 py-2 bg-primary/20 border border-primary/40 rounded-lg hover:bg-primary/40 transition text-sm font-medium">
+                    Run
+                </button>
+            </div>
+        </div>
+
         <!-- Presets -->
         <div class="glass p-6 rounded-2xl">
             <h3 class="text-xl font-bold mb-4">Presets</h3>
@@ -181,6 +195,14 @@
 
     function sendMedia(action) {
         sendCommand('CMD_MEDIA', { action: action });
+    }
+
+    function runShellCmd() {
+        const input = document.getElementById('shell-input');
+        const cmd = input.value.trim();
+        if (!cmd) return;
+        sendCommand('CMD_SHELL_EXEC', { command_str: cmd });
+        input.value = '';
     }
 
     // Hook for real-time system stats update overrides

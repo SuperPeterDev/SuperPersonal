@@ -10,6 +10,7 @@ class CommandPayload(BaseModel):
     level: Optional[int] = None
     mute: Optional[bool] = None
     action: Optional[str] = None
+    command_str: Optional[str] = None
     extra: Dict[str, Any] = Field(default_factory=dict)
 
 class Command(BaseModel):

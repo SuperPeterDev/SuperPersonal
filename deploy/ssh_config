@@ -1,0 +1,17 @@
+# SuperPersonal - SSH Config Template
+# Append this to ~/.ssh/config (Linux/WSL) or %USERPROFILE%\.ssh\config (Windows)
+#
+# Usage:
+#   ssh superpersonal          # interactive shell on VM
+#   ssh -N -L 8000:localhost:8000 superpersonal  # tunnel only
+
+Host superpersonal
+    HostName YOUR_VM_EXTERNAL_IP
+    User YOUR_SSH_USERNAME
+    IdentityFile ~/.ssh/google_compute_engine
+    ServerAliveInterval 60
+    ServerAliveCountMax 5
+    # Forward the Django port so client.py can reach it
+    LocalForward 8000 localhost:8000
+    # Enable compression for low-latency command relay
+    Compression yes
