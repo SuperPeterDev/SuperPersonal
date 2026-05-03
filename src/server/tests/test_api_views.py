@@ -83,3 +83,20 @@ class TestPresetAPI:
         response = api_client.post(url, data, format='json')
         print(response.content) # Debugging if 404
         assert response.status_code == status.HTTP_201_CREATED
+
+
+@pytest.mark.django_db
+class TestAuthProtection:
+    def test_unauthenticated_command_creation_rejected(self, unauthenticated_api_client):
+        device = Tbl_Device.objects.create(hardware_id="auth-test-device")
+        url = reverse('command-list')
+        data = {"device": str(device.pk_device_id), "command_type": "CMD_PING"}
+        response = unauthenticated_api_client.post(url, data, format='json')
+        assert response.status_code in [401, 403]
+
+    def test_authenticated_command_creation_allowed(self, api_client):
+        device = Tbl_Device.objects.create(hardware_id="auth-ok-device")
+        url = reverse('command-list')
+        data = {"device": str(device.pk_device_id), "command_type": "CMD_PING", "payload": {}}
+        response = api_client.post(url, data, format='json')
+        assert response.status_code == 201
