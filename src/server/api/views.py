@@ -1,6 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.utils import timezone
+from django.db.models import Q
 from .models import Tbl_Device, Tbl_Command, Tbl_Preset
 from src.shared.enums import CommandStatus
 from .serializers import DeviceSerializer, CommandSerializer, PresetSerializer
@@ -85,9 +87,12 @@ class CommandViewSet(viewsets.ModelViewSet):
         if not hardware_id:
             return Response({"error": "device_id required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        now = timezone.now()
         commands = Tbl_Command.objects.filter(
             device__hardware_id=hardware_id,
             status=CommandStatus.PENDING
+        ).filter(
+            Q(scheduled_for__isnull=True) | Q(scheduled_for__lte=now)
         )
         command_ids = list(commands.values_list('pk_command_id', flat=True))
         commands.update(status=CommandStatus.SENT)
