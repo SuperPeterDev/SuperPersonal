@@ -9,6 +9,10 @@ const socket = new WebSocket(wsUrl);
 socket.onopen = function (e) {
     console.log("WebSocket Connection Established");
     updateConnectionStatus(true);
+    // Request notification permission once on connect
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
 };
 
 socket.onclose = function (e) {
@@ -71,8 +75,40 @@ function handleCommandUpdate(data) {
         window.handleSystemInfo(data.output || '');
     }
 
+    // Process list dispatch
+    if (data.type === 'CMD_LIST_PROCESSES' && window.handleProcessList) {
+        window.handleProcessList(data.output || '');
+    }
+
+    // File list dispatch
+    if (data.type === 'CMD_FILE_LIST' && window.handleFileList) {
+        window.handleFileList(data.output || '');
+    }
+
+    // File read dispatch
+    if (data.type === 'CMD_FILE_READ' && window.handleFileRead) {
+        window.handleFileRead(data.output || '');
+    }
+
+    // Clipboard get dispatch
+    if (data.type === 'CMD_CLIPBOARD_GET' && window.handleClipboardGet) {
+        window.handleClipboardGet(data.output || '');
+    }
+
+    // Push notification for terminal states
+    const terminalStatuses = ['SUCCESS', 'FAILED'];
+    if (terminalStatuses.includes(data.status)) {
+        pushNotification(`${data.type || 'Command'} ${data.status}`, data.output ? data.output.substring(0, 80) : '');
+    }
+
     // Toast notification
     showToast(`${data.type || 'Command'}: ${data.status}`);
+}
+
+function pushNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: body, icon: '/static/img/icon.png' });
+    }
 }
 
 function handleDeviceUpdate(data) {

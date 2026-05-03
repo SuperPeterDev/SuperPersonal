@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import io
 import sys
+import psutil
 from PIL import Image
 
 from src.shared.schemas import CommandPayload
@@ -69,3 +70,115 @@ class TestShellExecExecutor:
             result = executor.execute(CommandPayload(command_str='bad_cmd'))
 
         assert 'error msg' in result.output
+
+
+import json
+from src.client.executors.system_advanced_executors import (
+    ListProcessesExecutor, KillProcessExecutor,
+    ClipboardGetExecutor, ClipboardSetExecutor,
+)
+
+
+class TestProcessExecutors:
+    def test_list_processes_returns_json_list(self):
+        executor = ListProcessesExecutor()
+        with patch('psutil.process_iter') as mock_iter:
+            mock_proc = MagicMock()
+            mock_proc.info = {'pid': 1, 'name': 'test.exe', 'cpu_percent': 0.5, 'memory_percent': 1.2}
+            mock_iter.return_value = [mock_proc]
+            result = executor.execute(CommandPayload())
+
+        assert result.status == CommandStatus.SUCCESS
+        processes = json.loads(result.output)
+        assert processes[0]['pid'] == 1
+        assert processes[0]['name'] == 'test.exe'
+
+    def test_kill_process_calls_kill(self):
+        executor = KillProcessExecutor()
+        with patch('psutil.Process') as MockProc:
+            result = executor.execute(CommandPayload(pid=9999))
+            MockProc.return_value.kill.assert_called_once()
+
+        assert result.status == CommandStatus.SUCCESS
+
+    def test_kill_process_missing_pid_fails(self):
+        executor = KillProcessExecutor()
+        result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+    def test_list_processes_handles_psutil_error(self):
+        executor = ListProcessesExecutor()
+        with patch('psutil.process_iter', side_effect=psutil.AccessDenied()):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+
+class TestClipboardExecutors:
+    def test_clipboard_get_returns_text(self):
+        executor = ClipboardGetExecutor()
+        with patch('pyperclip.paste', return_value='copied text'):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.SUCCESS
+        assert result.output == 'copied text'
+
+    def test_clipboard_set_writes_text(self):
+        executor = ClipboardSetExecutor()
+        with patch('pyperclip.copy') as mock_copy:
+            result = executor.execute(CommandPayload(text='new text'))
+            mock_copy.assert_called_once_with('new text')
+        assert result.status == CommandStatus.SUCCESS
+
+    def test_clipboard_set_missing_text_fails(self):
+        executor = ClipboardSetExecutor()
+        result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+    def test_clipboard_get_handles_pyperclip_error(self):
+        executor = ClipboardGetExecutor()
+        with patch('pyperclip.paste', side_effect=Exception("no clipboard")):
+            result = executor.execute(CommandPayload())
+        assert result.status == CommandStatus.FAILED
+
+    def test_clipboard_set_handles_pyperclip_error(self):
+        executor = ClipboardSetExecutor()
+        with patch('pyperclip.copy', side_effect=Exception("no clipboard")):
+            result = executor.execute(CommandPayload(text='test'))
+        assert result.status == CommandStatus.FAILED
+
+
+from src.client.executors.file_executor import FileListExecutor, FileReadExecutor
+
+
+class TestFileExecutors:
+    def test_file_list_returns_json(self, tmp_path):
+        (tmp_path / "foo.txt").write_text("hello")
+        (tmp_path / "bar.py").write_text("world")
+        executor = FileListExecutor()
+        result = executor.execute(CommandPayload(path=str(tmp_path)))
+
+        assert result.status == CommandStatus.SUCCESS
+        items = json.loads(result.output)
+        names = [i['name'] for i in items]
+        assert 'foo.txt' in names
+        assert 'bar.py' in names
+
+    def test_file_list_nonexistent_path_fails(self):
+        executor = FileListExecutor()
+        result = executor.execute(CommandPayload(path="/nonexistent/path"))
+        assert result.status == CommandStatus.FAILED
+
+    def test_file_read_returns_text(self, tmp_path):
+        f = tmp_path / "hello.txt"
+        f.write_text("file contents here")
+        executor = FileReadExecutor()
+        result = executor.execute(CommandPayload(path=str(f)))
+        assert result.status == CommandStatus.SUCCESS
+        assert result.output == "file contents here"
+
+    def test_file_read_limits_size(self, tmp_path):
+        f = tmp_path / "big.txt"
+        f.write_text("x" * 200_000)
+        executor = FileReadExecutor()
+        result = executor.execute(CommandPayload(path=str(f)))
+        assert result.status == CommandStatus.SUCCESS
+        assert len(result.output) <= 102_500  # 100KB limit (102400 bytes) + small overhead

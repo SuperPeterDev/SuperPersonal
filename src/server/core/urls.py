@@ -2,6 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.dashboard, name='dashboard'),
-    path('device/<uuid:pk>/', views.device_detail, name='device_detail'),
+    path('', views.dock, name='dock'),
+    path('device/<uuid:pk>/', views.dock_device, name='dock_device'),
 ]

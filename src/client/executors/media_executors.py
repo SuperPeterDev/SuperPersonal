@@ -13,8 +13,9 @@ class VolumeExecutor(CommandExecutor):
         return sys.platform == 'win32'
 
     def execute(self, payload: CommandPayload) -> CommandResult:
-        # Lazy imports to prevent Linux import-time crashes
         import pyautogui
+        import comtypes
+
         try:
             from pycaw.utils import AudioUtilities, IAudioEndpointVolume
             from comtypes import CLSCTX_ALL
@@ -29,27 +30,34 @@ class VolumeExecutor(CommandExecutor):
 
         level = payload.level
         mute = payload.mute
-        
+
+        if not audio_available:
+            if mute is not None:
+                pyautogui.press('volumemute')
+                return CommandResult(status=CommandStatus.SUCCESS, output="Toggled Mute (Fallback)")
+            return CommandResult(
+                status=CommandStatus.SUCCESS,
+                output="Volume Level not fully supported in fallback mode"
+            )
+
+        comtypes.CoInitialize()
         try:
-            if audio_available:
-                devices = AudioUtilities.GetSpeakers()
-                if hasattr(devices, 'EndpointVolume'):
-                    volume = devices.EndpointVolume
-                else:
-                    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-                    volume = interface.QueryInterface(IAudioEndpointVolume)
-                
-                if mute is not None:
-                    volume.SetMute(mute, None)
-                if level is not None:
-                    scalar = max(0.0, min(1.0, level / 100.0))
-                    volume.SetMasterVolumeLevelScalar(scalar, None)
-                return CommandResult(
-                    status=CommandStatus.SUCCESS, 
-                    output=f"Volume set to {level}% (Mute: {mute})"
-                )
+            devices = AudioUtilities.GetSpeakers()
+            if hasattr(devices, 'EndpointVolume'):
+                volume = devices.EndpointVolume
             else:
-                raise ImportError("Audio library not found")
+                interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                volume = interface.QueryInterface(IAudioEndpointVolume)
+
+            if mute is not None:
+                volume.SetMute(mute, None)
+            if level is not None:
+                scalar = max(0.0, min(1.0, level / 100.0))
+                volume.SetMasterVolumeLevelScalar(scalar, None)
+            return CommandResult(
+                status=CommandStatus.SUCCESS,
+                output=f"Volume set to {level}% (Mute: {mute})"
+            )
         except Exception as e:
             logger.warning(f"Pycaw error: {e}. Trying fallback...")
             try:
@@ -57,11 +65,13 @@ class VolumeExecutor(CommandExecutor):
                     pyautogui.press('volumemute')
                     return CommandResult(status=CommandStatus.SUCCESS, output="Toggled Mute (Fallback)")
                 return CommandResult(
-                    status=CommandStatus.SUCCESS, 
+                    status=CommandStatus.SUCCESS,
                     output="Volume Level not fully supported in fallback mode"
                 )
             except Exception as fe:
                 return CommandResult(status=CommandStatus.FAILED, output=f"Audio control failed: {e}")
+        finally:
+            comtypes.CoUninitialize()
 
 @ExecutorRegistry.register(CommandType.CMD_MEDIA)
 class MediaExecutor(CommandExecutor):
