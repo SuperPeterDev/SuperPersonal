@@ -30,7 +30,19 @@ class TestCommandAPI:
         
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
-        assert response.data[0]['status'] == 'PENDING'
+        # After poll, status should be SENT (not PENDING)
+        assert response.data[0]['status'] == 'SENT'
+
+    def test_pending_endpoint_marks_commands_sent(self, api_client):
+        device = Tbl_Device.objects.create(hardware_id="sent-test-device")
+        Tbl_Command.objects.create(device=device, command_type=CommandType.CMD_PING, status=CommandStatus.PENDING)
+
+        url = reverse('command-pending') + f"?device_id={device.hardware_id}"
+        api_client.get(url)
+
+        # After polling, the command must be SENT — not PENDING
+        cmd = Tbl_Command.objects.get()
+        assert cmd.status == CommandStatus.SENT
 
     def test_submit_result(self, api_client):
         device = Tbl_Device.objects.create(hardware_id="res-device")
