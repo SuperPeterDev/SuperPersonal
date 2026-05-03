@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperPersonal — Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { primary: { DEFAULT: '#3b82f6' } } } }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body { @apply bg-gray-900 text-white font-sans antialiased; }
+        .glass { @apply bg-white/5 backdrop-blur-lg border border-white/10; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+    <div class="glass p-10 rounded-2xl w-full max-w-sm shadow-2xl">
+        <h1 class="text-3xl font-bold text-center mb-2">
+            <span class="text-primary">Super</span>Personal
+        </h1>
+        <p class="text-gray-400 text-center text-sm mb-8">System Controller</p>
+
+        {% if form.errors %}
+        <div class="bg-red-500/20 border border-red-500/40 rounded-lg px-4 py-2 mb-4 text-sm text-red-300">
+            Invalid username or password.
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-gray-400 text-sm mb-1">Username</label>
+                <input name="username" type="text" autofocus
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+                <label class="block text-gray-400 text-sm mb-1">Password</label>
+                <input name="password" type="password"
+                    class="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" />
+            </div>
+            <input type="hidden" name="next" value="{{ next }}" />
+            <button type="submit"
+                class="w-full py-3 bg-primary rounded-lg font-medium hover:bg-blue-500 transition mt-2">
+                Sign In
+            </button>
+        </form>
+    </div>
+</body>
+</html>
